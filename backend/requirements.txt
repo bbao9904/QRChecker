@@ -4,4 +4,8 @@ pillow
 gunicorn
 qrcode
 opencv-python
+<<<<<<< HEAD
 requests
+=======
+requests
+>>>>>>> 65b37870c8f7ad65a6f952ac7a08001ca36b23a7
