@@ -172,7 +172,7 @@ def init_db():
                   ("admin","admin@example.com", generate_password_hash("admin123")))
         conn.commit()
     conn.close()
-
+ #khổ quá
 init_db()
 
 # ==== Auth APIs ====
