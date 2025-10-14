@@ -1,15 +1,16 @@
-from flask import Flask, request, jsonify, render_template
-from pyzbar.pyzbar import decode
-from PIL import Image
-from pyngrok import ngrok
-import json
-import os
+from flask import Flask, request, jsonify, render_template, session, abort
+import sqlite3
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import timedelta
+from dotenv import load_dotenv
+# Thêm các import còn thiếu
+import os, json, time, threading, base64, re
 import requests
-import re
-import base64
-import time
 from urllib.parse import urlparse
-import threading
+from PIL import Image
+from pyzbar.pyzbar import decode
+
+load_dotenv()
 
 app = Flask(
     __name__,
@@ -17,14 +18,16 @@ app = Flask(
     static_folder='../frontend',
     static_url_path=''  # cho phép /style.css
 )
+app.secret_key = os.getenv("APP_SECRET", "dev_change_me")
+app.permanent_session_lifetime = timedelta(days=7)
 
-# Load danh sách mã QR an toàn
-with open('safe_qr_list.json', 'r', encoding='utf-8') as f:
-    SAFE_QR_LIST = json.load(f)
-
-# Thêm API key của VirusTotal 
 VIRUSTOTAL_API_KEY = "4f89f9c7346c91969c99187def022dd96052b0c18b205ec2942813513e219ce5"
 
+# Load danh sách mã QR an toàn (dùng đường dẫn tuyệt đối)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(BASE_DIR, 'safe_qr_list.json'), 'r', encoding='utf-8') as f:
+    SAFE_QR_LIST = json.load(f)
+    
 # ===== Thêm cache & throttle =====
 URL_CACHE = {}  # { url: (timestamp, (is_safe, message, details)) }
 CACHE_TTL = 15 * 60  # 15 phút
@@ -147,8 +150,126 @@ def check_url_safety(url):
             "malicious":0,"suspicious":0,"clean":0,"total":0
         }
 
+# ==== SQLite users ====
+def get_db():
+    return sqlite3.connect('users.db')
+
+def init_db():
+    conn = get_db(); c = conn.cursor()
+    c.execute("""
+      CREATE TABLE IF NOT EXISTS users(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        email TEXT UNIQUE,
+        password TEXT,
+        is_admin INTEGER DEFAULT 0
+      )
+    """)
+    conn.commit()
+    c.execute("SELECT COUNT(*) FROM users")
+    if c.fetchone()[0] == 0:
+        c.execute("INSERT INTO users (username,email,password,is_admin) VALUES (?,?,?,1)",
+                  ("admin","admin@example.com", generate_password_hash("admin123")))
+        conn.commit()
+    conn.close()
+
+init_db()
+
+# ==== Auth APIs ====
+@app.route("/register", methods=["POST"])
+def api_register():
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    email = (data.get("email") or "").strip()
+    password = data.get("password") or ""
+    if not username or not email or not password:
+        return jsonify({"status":"fail","msg":"Thiếu thông tin"}), 400
+    # Kiểm tra độ mạnh mật khẩu (đảm bảo đã khai báo is_strong_password ở trên)
+    if not is_strong_password(password):
+        return jsonify({"status":"fail","msg":"Mật khẩu phải ≥8 ký tự, gồm chữ thường, CHỮ HOA, số và ký tự đặc biệt."}), 400
+
+    conn = get_db(); c = conn.cursor()
+    try:
+        # Tiền kiểm trùng lặp để trả lời rõ ràng
+        user_exists = c.execute("SELECT 1 FROM users WHERE username=?", (username,)).fetchone() is not None
+        email_exists = c.execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone() is not None
+        if user_exists and email_exists:
+            return jsonify({"status":"fail","field":"username","msg":"Tên đăng nhập và email này đã tồn tại. Vui lòng nhập thông tin khác."}), 409
+        if user_exists:
+            return jsonify({"status":"fail","field":"username","msg":"Tên đăng nhập này đã tồn tại. Vui lòng nhập tên khác."}), 409
+        if email_exists:
+            return jsonify({"status":"fail","field":"email","msg":"Email này đã được đăng ký. Vui lòng dùng email khác."}), 409
+
+        # Tạo tài khoản
+        c.execute("INSERT INTO users (username,email,password) VALUES (?,?,?)",
+                  (username, email, generate_password_hash(password)))
+        conn.commit()
+        return jsonify({"status":"ok"})
+    except sqlite3.IntegrityError as e:
+        msg = str(e)
+        if "users.username" in msg:
+            return jsonify({"status":"fail","field":"username","msg":"Tên đăng nhập này đã tồn tại. Vui lòng nhập tên khác."}), 409
+        if "users.email" in msg:
+            return jsonify({"status":"fail","field":"email","msg":"Email này đã được đăng ký. Vui lòng dùng email khác."}), 409
+        return jsonify({"status":"fail","msg":"Không thể tạo tài khoản. Vui lòng thử lại."}), 400
+    finally:
+        conn.close()
+
+@app.route("/login", methods=["POST"])
+def api_login():
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
+    conn = get_db(); c = conn.cursor()
+    c.execute("SELECT id,password,is_admin FROM users WHERE username=?", (username,))
+    row = c.fetchone(); conn.close()
+    if row and check_password_hash(row[1], password):
+        session.permanent = True
+        session["user_id"] = row[0]
+        session["username"] = username
+        session["is_admin"] = bool(row[2])
+        return jsonify({"status":"ok","is_admin":bool(row[2])})
+    return jsonify({"status":"fail","msg":"Sai tài khoản hoặc mật khẩu"}), 401
+
+@app.route("/logout")
+def api_logout():
+    session.clear()
+    return jsonify({"status":"ok"})
+
+@app.route("/me")
+def api_me():
+    if "user_id" not in session:
+        return jsonify({"status":"fail"}), 401
+    return jsonify({"username": session["username"], "is_admin": bool(session["is_admin"]) })
+
+# ==== Admin ====
+@app.route("/admin/users")
+def api_admin_users():
+    if not session.get("is_admin"): return abort(403)
+    conn = get_db(); c = conn.cursor()
+    c.execute("SELECT id,username,email,is_admin FROM users")
+    users = [{"id":r[0], "username":r[1], "email":r[2], "is_admin":bool(r[3])} for r in c.fetchall()]
+    conn.close()
+    return jsonify(users)
+
+@app.route("/admin/delete_user", methods=["POST"])
+def api_admin_delete_user():
+    if not session.get("is_admin"): return abort(403)
+    data = request.get_json(silent=True) or {}
+    uid = data.get("user_id")
+    if not uid: return jsonify({"status":"fail","msg":"Thiếu user_id"}), 400
+    if int(uid) == int(session.get("user_id", -1)):
+        return jsonify({"status":"fail","msg":"Không thể tự xoá"}), 400
+    conn = get_db(); c = conn.cursor()
+    c.execute("DELETE FROM users WHERE id=?", (uid,))
+    conn.commit(); conn.close()
+    return jsonify({"status":"ok"})
+
+# ==== BẢO VỆ QUÉT ====
 @app.route('/scan', methods=['POST'])
 def scan_qr():
+    if "user_id" not in session:
+        return jsonify({"result":"Bạn cần đăng nhập để sử dụng chức năng này."}), 401
     try:
         if 'file' in request.files:
             file = request.files['file']
@@ -191,6 +312,22 @@ def scan_qr():
 @app.route('/')
 def home():
     return render_template('index.html')
+
+# ==== Password strength (đặt trước route /register) ====
+_pw_re_lower = re.compile(r'[a-z]')
+_pw_re_upper = re.compile(r'[A-Z]')
+_pw_re_digit = re.compile(r'\d')
+_pw_re_special = re.compile(r'[^A-Za-z0-9]')
+
+def is_strong_password(pw: str) -> bool:
+    return (
+        isinstance(pw, str)
+        and len(pw) >= 8
+        and _pw_re_lower.search(pw)
+        and _pw_re_upper.search(pw)
+        and _pw_re_digit.search(pw)
+        and _pw_re_special.search(pw)
+    )
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, ssl_context='adhoc')
