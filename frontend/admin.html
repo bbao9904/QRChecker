@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quản trị - QR Checker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site-header">
+  <nav class="nav">
+    <div class="nav__brand">
+      <a href="index.html" class="nav__logo">
+        <img src="https://upload.wikimedia.org/wikipedia/vi/thumb/2/2d/Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8dc_FPT.svg/240px-Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8dc_FPT.svg.png" alt="FPT">
+      </a>
+      <span class="nav__title">QR Checker</span>
+    </div>
+    <input type="checkbox" id="nav-toggle">
+    <label for="nav-toggle" class="nav__toggle"><span></span></label>
+    <div class="nav__links">
+      <a href="about.html">Giới thiệu</a>
+      <a href="guide.html">Hướng dẫn</a>
+      <a href="create.html">Tạo mã QR</a>
+      <a href="history.html">Lịch sử</a>
+      <a id="nav-auth" class="btn-small" href="login.html">Đăng nhập</a>
+    </div>
+  </nav>
+</header>
+
+<section class="scan-wrapper" style="padding-top:40px;">
+  <!-- Guard -->
+  <div id="guard" class="card" style="max-width:900px;margin:0 auto;display:none;text-align:center;">
+    <h3 id="guard-title">Bạn cần đăng nhập</h3>
+    <p id="guard-desc" style="margin:8px 0 16px;color:#555;">Vui lòng đăng nhập để truy cập trang quản trị.</p>
+    <a class="btn btn--primary" id="btnLogin">Đăng nhập</a>
+    <a class="btn btn--ghost" href="register.html" style="margin-left:8px;">Đăng ký</a>
+  </div>
+
+  <!-- Nội dung admin -->
+  <div id="authed" class="card" style="max-width:1000px;margin:0 auto;display:none;">
+    <h2>Quản lý người dùng</h2>
+    <div id="user-list">Đang tải...</div>
+  </div>
+</section>
+
+ <!-- FOOTER -->
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div>
+                <h4>QR Checker</h4>
+                <p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p>
+            </div>
+            <div>
+                <h5>Chức năng</h5>
+                <ul>
+                    <li><a href="#scan">Quét mã QR</a></li>
+                    <li><a href="create.html">Tạo mã</a></li>
+                    <li><a href="history.html">Lịch sử</a></li>
+                </ul>
+            </div>
+            <div>
+                <h5>Hỗ trợ</h5>
+                <ul>
+                    <li><a href="guide.html">Hướng dẫn</a></li>
+                    <li><a href="about.html">Giới thiệu</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copy small">© 2025 QR Checker</div>
+    </footer>
+
+<script>
+async function loadPage(){
+  const r = await fetch('/me');
+  if(r.status!==200){
+    showGuard('Bạn cần đăng nhập', 'Vui lòng đăng nhập để truy cập trang quản trị.');
+    return;
+  }
+  const me = await r.json();
+  if(!me.is_admin){
+    showGuard('Không có quyền truy cập', 'Tài khoản của bạn không có quyền Admin.');
+    return;
+  }
+  document.getElementById('guard').style.display='none';
+  document.getElementById('authed').style.display='block';
+  await loadUsers();
+}
+function showGuard(title, desc){
+  document.getElementById('guard').style.display='block';
+  document.getElementById('guard-title').textContent=title;
+  document.getElementById('guard-desc').textContent=desc;
+  document.getElementById('btnLogin').onclick=()=>{ location.href='login.html?next=admin.html'; };
+}
+
+async function loadUsers(){
+  const r = await fetch('/admin/users');
+  if(r.status!==200){ document.getElementById('user-list').textContent='Không thể tải danh sách.'; return; }
+  const users = await r.json();
+  let html = `<div class="table-wrap"><table class="admin-table"><thead><tr><th>ID</th><th>Username</th><th>Email</th><th>Quyền</th><th></th></tr></thead><tbody>`;
+  for(const u of users){
+    html += `<tr>
+      <td>${u.id}</td>
+      <td>${u.username}</td>
+      <td>${u.email||''}</td>
+      <td>${u.is_admin? 'Admin':'User'}</td>
+      <td>${u.is_admin? '' : `<button class="btn btn--outline btn--tiny" onclick="delUser(${u.id})">Xoá</button>`}</td>
+    </tr>`;
+  }
+  html += `</tbody></table></div>`;
+  document.getElementById('user-list').innerHTML = html;
+}
+async function delUser(id){
+  if(!confirm('Xoá người dùng?')) return;
+  const r = await fetch('/admin/delete_user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:id})});
+  const d = await r.json().catch(()=>({}));
+  if(d.status==='ok') loadUsers(); else alert(d.msg||'Lỗi');
+}
+loadPage();
+
+// Navbar auth label/link
+(async function(){
+  const a = document.getElementById('nav-auth'); if(!a) return;
+  try{
+    const r = await fetch('/me');
+    if(r.status===200){ a.textContent='Tài khoản'; a.href='account.html'; }
+    else{
+      a.textContent='Đăng nhập';
+      a.href='login.html?next=' + encodeURIComponent(location.pathname);
+    }
+  }catch{
+    a.textContent='Đăng nhập';
+    a.href='login.html?next=' + encodeURIComponent(location.pathname);
+  }
+})();
+</script>
+</body>
+</html>

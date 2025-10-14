@@ -23,7 +23,7 @@
       <a href="guide.html" class="active">Hướng dẫn</a>
       <a href="create.html">Tạo mã QR</a>
       <a href="history.html">Lịch sử</a>
-      <a id="nav-auth" class="btn-small" href="login.html">Đăng nhập</a>
+      <a href="account.html" class="btn-small">Đăng nhập</a>
     </div>
   </nav>
 </header>
@@ -104,24 +104,16 @@
 </section>
 
 <footer class="site-footer">
+  <div class="footer-grid">
+    <div><h4>QR Checker</h4><p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p></div>
+    <div><h5>Chức năng</h5><ul><li><a href="index.html#scan">Quét mã QR</a></li><li><a href="create.html">Tạo mã</a></li><li><a href="history.html">Lịch sử</a></li></ul></div>
+    <div><h5>Hỗ trợ</h5><ul><li><a href="guide.html">Hướng dẫn</a></li><li><a href="about.html">Giới thiệu</a></li></ul></div>
+  </div>
   <div class="copy small">© 2025 QR Checker</div>
 </footer>
 
 <script>
-// Cập nhật nút navbar theo trạng thái
-(async function(){
-  const a = document.getElementById('nav-auth'); if(!a) return;
-  try{
-    const r = await fetch('/me');
-    if(r.status===200){ a.textContent='Tài khoản'; a.href='account.html'; }
-    else{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent('guide.html'); }
-  }catch{
-    a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent('guide.html');
-  }
-})();
-
-// FAQ toggle giữ nguyên
-document.querySelectorAll('.faq-item')?.forEach(i=>{
+document.querySelectorAll('.faq-item').forEach(i=>{
   i.addEventListener('click',()=>i.classList.toggle('open'));
 });
 </script>

@@ -64,7 +64,7 @@ body{
   display:grid;gap:60px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));align-items:center;
 }
 .hero__content h1{
-  font-size:2.0rem;font-weight:700;
+  font-size:2.5rem;font-weight:700;
   background:linear-gradient(90deg,#ff9100,#ffb300);
   -webkit-background-clip:text;
   color:transparent;
@@ -332,49 +332,3 @@ body{
   font-size:.65rem;
 
 }
-
-/* ==== Forms & Admin Table ==== */
-.form input, .form textarea {
-  width:100%;
-  padding:12px 14px;
-  border:1px solid #ffd58b;
-  border-radius:14px;
-  font-size:.9rem;
-  margin-top:10px;
-  outline:none;
-  transition:.18s;
-  background:#fffdfa;
-}
-.form input:focus, .form textarea:focus {
-  border-color:#ffb300;
-  box-shadow:0 0 0 3px rgba(255,179,0,.15);
-}
-.table-wrap{overflow:auto;border:1px solid #ffe1b0;border-radius:16px;}
-.admin-table{
-  width:100%; border-collapse:separate; border-spacing:0; font-size:.85rem; background:#fff;
-}
-.admin-table thead th{
-  text-align:left; padding:12px 14px; background:#fff7e0; color:#7a4b00; font-weight:700;
-  border-bottom:1px solid #ffe1b0;
-}
-.admin-table td{
-  padding:12px 14px; border-bottom:1px solid #ffe7c7;
-}
-.admin-table tr:last-child td{border-bottom:none;}
-.admin-table tbody tr:hover{background:#fffbe9;}
-.btn--tiny{padding:8px 12px;font-size:.75rem;border-radius:10px;}
-
-/* ==== Auth forms (login/register) ==== */
-.auth-card{max-width:520px;margin:0 auto;}
-.input-wrap{position:relative;}
-.input-with-icon{padding-right:44px!important;}
-.toggle-eye{
-  position:absolute; right:10px; top:50%; transform:translateY(-50%);
-  display:inline-flex; align-items:center; justify-content:center;
-  width:32px; height:32px; border:none; background:transparent; cursor:pointer;
-  color:#9c6b00; border-radius:8px; font-size:16px; line-height:1;
-}
-.toggle-eye:hover{background:#fff4e0;}
-.msg{margin-top:8px;}
-.msg.error{color:#d32f2f;}
-.msg.success{color:#2e7d32;}

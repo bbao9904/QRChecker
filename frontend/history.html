@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>Lịch sử - QR Checker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
 </head>
 <body>
 <header class="site-header">
   <nav class="nav">
     <div class="nav__brand">
       <a href="index.html" class="nav__logo">
-        <img src="https://upload.wikimedia.org/wikipedia/vi/thumb/2/2d/Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8dc_FPT.svg/240px-Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8dc_FPT.svg.png" alt="FPT">
+        <img src="https://upload.wikimedia.org/wikipedia/vi/thumb/2/2d/Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8Dc_FPT.svg/240px-Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8Dc_FPT.svg.png" alt="FPT">
       </a>
       <span class="nav__title">QR Checker</span>
     </div>
@@ -23,28 +23,105 @@
       <a href="guide.html">Hướng dẫn</a>
       <a href="create.html">Tạo mã QR</a>
       <a href="history.html" class="active">Lịch sử</a>
-      <a href="account.html" class="btn-small">Đăng nhập</a>
+      <a id="nav-auth" class="btn-small" href="login.html">Đăng nhập</a>
     </div>
   </nav>
 </header>
 
-<section class="scan-wrapper" style="padding-top:40px;">
-  <h1 class="section-title">Lịch sử quét</h1>
-  <div class="card">
-    <h3>Tính năng sắp ra mắt</h3>
-    <p>Trang sẽ hiển thị danh sách mã đã quét gần đây, bộ lọc và xuất file.</p>
-    <p class="mt-1">Hiện tại dữ liệu được lưu tạm trong phiên. Bản cập nhật sẽ cho phép đồng bộ tài khoản.</p>
-   <a href="index.html#scan" class="btn btn--accent mt-1">Quét ngay</a>
+<section id="auth-guard" class="scan-wrapper" style="padding-top:40px; display:none;">
+  <div class="card" style="max-width:720px;margin:0 auto;text-align:center;">
+    <h2>Bạn cần đăng nhập</h2>
+    <p class="small">Hãy đăng nhập để xem Lịch sử quét.</p>
+    <div class="hero__actions" style="margin-top:12px; display:flex; justify-content:center;">
+      <a id="guard-login" class="btn btn--primary">Đăng nhập</a>
+    </div>
   </div>
 </section>
 
+<section id="feature-content" class="scan-wrapper" style="padding-top:40px; display:none;">
+  <h1 class="section-title">Lịch sử quét</h1>
+  <div class="card" style="max-width:900px;margin:0 auto;">
+    <span class="badge">Coming soon</span>
+    <h2 style="margin:8px 0 6px;">Tính năng sắp ra mắt</h2>
+    <p>Trang lịch sử giúp bạn xem lại các QR đã quét, trạng thái an toàn và chi tiết phân tích.</p>
+    <p class="mt-1">Sắp có: lọc theo thời gian/kết quả, tìm kiếm, xuất CSV, xóa từng dòng hoặc toàn bộ.</p>
+
+    <div class="quick-section" style="margin-top:14px;">
+      <h2>Tính năng dự kiến</h2>
+      <ul>
+        <li>Nhật ký quét theo tài khoản, đồng bộ trên nhiều thiết bị.</li>
+        <li>Bộ lọc nhanh: an toàn/đáng ngờ/độc hại, nguồn VT/IPQS.</li>
+        <li>Xuất dữ liệu: CSV/JSON, copy nhanh ra clipboard.</li>
+        <li>Chi tiết lần quét: URL chuẩn hóa, điểm rủi ro, mô tả lý do.</li>
+      </ul>
+    </div>
+
+    <div class="quick-section">
+      <h2>Lộ trình phát triển</h2>
+      <ul>
+        <li>Giai đoạn 1: Lưu lịch sử cục bộ theo user, danh sách cơ bản.</li>
+        <li>Giai đoạn 2: Bộ lọc, tìm kiếm, phân trang, xóa hàng loạt.</li>
+        <li>Giai đoạn 3: Xuất file, đồng bộ và chia sẻ.</li>
+      </ul>
+    </div>
+
+    <div class="hero__actions" style="margin-top:8px;">
+      <a class="btn btn--primary" href="index.html#scan">Quét mã ngay</a>
+      <a class="btn btn--primary" href="about.html">Giới thiệu</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
 <footer class="site-footer">
   <div class="footer-grid">
-    <div><h4>QR Checker</h4><p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p></div>
-    <div><h5>Chức năng</h5><ul><li><a href="index.html#scan">Quét mã QR</a></li><li><a href="create.html">Tạo mã</a></li><li><a href="history.html">Lịch sử</a></li></ul></div>
-    <div><h5>Hỗ trợ</h5><ul><li><a href="guide.html">Hướng dẫn</a></li><li><a href="about.html">Giới thiệu</a></li></ul></div>
+    <div>
+      <h4>QR Checker</h4>
+      <p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p>
+    </div>
+    <div>
+      <h5>Chức năng</h5>
+      <ul>
+        <li><a href="#scan">Quét mã QR</a></li>
+        <li><a href="create.html">Tạo mã</a></li>
+        <li><a href="history.html">Lịch sử</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5>Hỗ trợ</h5>
+      <ul>
+        <li><a href="guide.html">Hướng dẫn</a></li>
+        <li><a href="about.html">Giới thiệu</a></li>
+      </ul>
+    </div>
   </div>
   <div class="copy small">© 2025 QR Checker</div>
 </footer>
+
+<script>
+// Navbar auth label/link
+(async function(){
+  const next = location.pathname + location.search + location.hash;
+  const a = document.getElementById('nav-auth');
+  const guard = document.getElementById('auth-guard');
+  const content = document.getElementById('feature-content');
+  const r = await fetch('/me', {credentials:'include'}).catch(()=>null);
+  const authed = !!r && r.status === 200;
+
+  if(a){
+    if(authed){ a.textContent='Tài khoản'; a.href='account.html'; }
+    else{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
+  }
+  if(authed){
+    if(content) content.style.display='block';
+    if(guard) guard.style.display='none';
+  }else{
+    if(content) content.style.display='none';
+    if(guard) guard.style.display='block';
+    const btn = document.getElementById('guard-login');
+    if(btn) btn.href = 'login.html?next=' + encodeURIComponent(next);
+  }
+})();
+</script>
 </body>
 </html>

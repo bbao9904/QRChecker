@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng nhập - QR Checker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site-header">
+  <nav class="nav">
+    <div class="nav__brand">
+      <a href="index.html" class="nav__logo">
+        <img src="https://upload.wikimedia.org/wikipedia/vi/thumb/2/2d/Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8dc_FPT.svg/240px-Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8dc_FPT.svg.png" alt="FPT">
+      </a>
+      <span class="nav__title">QR Checker</span>
+    </div>
+    <input type="checkbox" id="nav-toggle">
+    <label for="nav-toggle" class="nav__toggle"><span></span></label>
+    <div class="nav__links">
+      <a href="about.html">Giới thiệu</a>
+      <a href="guide.html">Hướng dẫn</a>
+      <a href="create.html">Tạo mã QR</a>
+      <a href="history.html">Lịch sử</a>
+      <a id="nav-auth" class="btn-small" href="login.html">Đăng nhập</a>
+    </div>
+  </nav>
+</header>
+
+<section class="scan-wrapper" style="padding-top:40px;">
+  <div class="card auth-card">
+    <h2>Đăng nhập</h2>
+    <form id="login-form" class="form" autocomplete="on">
+      <input id="login-username" name="username" placeholder="Tên đăng nhập" autocomplete="username" required>
+      <div class="input-wrap">
+        <input id="login-password" class="input-with-icon" name="password" type="password" placeholder="Mật khẩu" autocomplete="current-password" required>
+        <button type="button" class="toggle-eye" aria-label="Hiện/ẩn mật khẩu" data-target="login-password">👁</button>
+      </div>
+      <button type="submit" class="btn btn--primary full mt-1">Đăng nhập</button>
+      <div id="login-msg" class="small msg error" aria-live="polite"></div>
+      <div class="small" style="margin-top:10px;color:#666;">Chưa có tài khoản? <a href="register.html">Đăng ký</a></div>
+    </form>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div>
+      <h4>QR Checker</h4>
+      <p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p>
+    </div>
+    <div>
+      <h5>Chức năng</h5>
+      <ul>
+        <li><a href="#scan">Quét mã QR</a></li>
+        <li><a href="create.html">Tạo mã</a></li>
+        <li><a href="history.html">Lịch sử</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5>Hỗ trợ</h5>
+      <ul>
+        <li><a href="guide.html">Hướng dẫn</a></li>
+        <li><a href="about.html">Giới thiệu</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="copy small">© 2025 QR Checker</div>
+</footer>
+
+<script>
+const nextUrl = new URLSearchParams(location.search).get('next') || 'index.html';
+
+// Toggle eye
+document.querySelectorAll('.toggle-eye').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const id = btn.getAttribute('data-target');
+    const input = document.getElementById(id);
+    if(!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+});
+
+// Submit (Enter hỗ trợ sẵn)
+document.getElementById('login-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const r = await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+  if(r.status===200){ location.href = nextUrl; }
+  else{
+    const d = await r.json().catch(()=>({}));
+    document.getElementById('login-msg').textContent = d.msg || 'Đăng nhập thất bại';
+  }
+});
+
+// Navbar auth label/link
+(async function(){
+  const a = document.getElementById('nav-auth'); if(!a) return;
+  try{
+    const r = await fetch('/me');
+    if(r.status===200){ a.textContent='Tài khoản'; a.href='account.html'; }
+    else{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
+  }catch{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
+})();
+</script>
+</body>
+</html>

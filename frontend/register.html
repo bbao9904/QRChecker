@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng ký - QR Checker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site-header">
+  <nav class="nav">
+    <div class="nav__brand">
+      <a href="index.html" class="nav__logo">
+        <img src="https://upload.wikimedia.org/wikipedia/vi/thumb/2/2d/Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8Dc_FPT.svg/240px-Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8Dc_FPT.svg.png" alt="FPT">
+      </a>
+      <span class="nav__title">QR Checker</span>
+    </div>
+    <input type="checkbox" id="nav-toggle">
+    <label for="nav-toggle" class="nav__toggle"><span></span></label>
+    <div class="nav__links">
+      <a href="about.html">Giới thiệu</a>
+      <a href="guide.html">Hướng dẫn</a>
+      <a href="create.html">Tạo mã QR</a>
+      <a href="history.html">Lịch sử</a>
+      <a id="nav-auth" class="btn-small" href="login.html">Đăng nhập</a>
+    </div>
+  </nav>
+</header>
+
+<section class="scan-wrapper" style="padding-top:40px;">
+  <div class="card auth-card">
+    <h2>Đăng ký</h2>
+    <form id="reg-form" class="form" autocomplete="on">
+      <input id="reg-username" name="username" placeholder="Tên đăng nhập" autocomplete="username" required>
+      <input id="reg-email" name="email" type="email" placeholder="Email" autocomplete="email" required>
+
+      <div class="input-wrap">
+        <input id="reg-password" class="input-with-icon" name="password" type="password"
+               placeholder="Mật khẩu (≥8, a-z, A-Z, số, ký tự đặc biệt)"
+               autocomplete="new-password" required
+               pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}"
+               title="Ít nhất 8 ký tự, gồm chữ thường, CHỮ HOA, số và ký tự đặc biệt.">
+        <button type="button" class="toggle-eye" aria-label="Hiện/ẩn mật khẩu" data-target="reg-password">👁</button>
+      </div>
+
+      <div class="input-wrap">
+        <input id="reg-password2" class="input-with-icon" name="password2" type="password"
+               placeholder="Nhập lại mật khẩu" autocomplete="new-password" required>
+        <button type="button" class="toggle-eye" aria-label="Hiện/ẩn mật khẩu" data-target="reg-password2">👁</button>
+      </div>
+
+      <div class="hint small">Mật khẩu phải ≥8 ký tự, có chữ thường, CHỮ HOA, số và ký tự đặc biệt.</div>
+
+      <button type="submit" class="btn btn--primary full mt-1">Tạo tài khoản</button>
+      <div id="reg-msg" class="small msg" role="alert"></div>
+      <div class="small" style="margin-top:10px;color:#666;">Đã có tài khoản? <a href="login.html">Đăng nhập</a></div>
+    </form>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div>
+      <h4>QR Checker</h4>
+      <p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p>
+    </div>
+    <div>
+      <h5>Chức năng</h5>
+      <ul>
+        <li><a href="#scan">Quét mã QR</a></li>
+        <li><a href="create.html">Tạo mã</a></li>
+        <li><a href="history.html">Lịch sử</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5>Hỗ trợ</h5>
+      <ul>
+        <li><a href="guide.html">Hướng dẫn</a></li>
+        <li><a href="about.html">Giới thiệu</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="copy small">© 2025 QR Checker</div>
+</footer>
+
+<script>
+// Toggle eye
+document.querySelectorAll('.toggle-eye').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const id = btn.getAttribute('data-target');
+    const input = document.getElementById(id);
+    if(!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+});
+
+function strong(pw){
+  return pw.length>=8 && /[a-z]/.test(pw) && /[A-Z]/.test(pw) && /\d/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+}
+
+document.getElementById('reg-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pw1 = document.getElementById('reg-password').value;
+  const pw2 = document.getElementById('reg-password2').value;
+  const msg = document.getElementById('reg-msg');
+
+  if(pw1 !== pw2){ msg.className='small msg error'; msg.textContent='Mật khẩu nhập lại không khớp.'; return; }
+  if(!strong(pw1)){ msg.className='small msg error'; msg.textContent='Mật khẩu chưa đủ mạnh.'; return; }
+
+  const r = await fetch('/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password:pw1})});
+  const d = await r.json().catch(()=>({}));
+  if(r.status===200 && d.status==='ok'){
+    msg.className='small msg success'; msg.textContent='Đăng ký thành công. Chuyển đến đăng nhập...';
+    setTimeout(()=>location.href='login.html?next=index.html',600);
+  }else{
+    msg.className='small msg error'; msg.textContent = d.msg || 'Đăng ký thất bại.';
+    if(d.field === 'username') document.getElementById('reg-username').focus();
+    if(d.field === 'email') document.getElementById('reg-email').focus();
+  }
+});
+
+// Navbar auth label/link
+(async function(){
+  const a = document.getElementById('nav-auth'); if(!a) return;
+  try{
+    const r = await fetch('/me');
+    if(r.status===200){ a.textContent='Tài khoản'; a.href='account.html'; }
+    else{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
+  }catch{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
+})();
+</script>
+</body>
+</html>

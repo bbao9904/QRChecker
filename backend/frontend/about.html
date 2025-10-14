@@ -23,7 +23,7 @@
       <a href="guide.html">Hướng dẫn</a>
       <a href="create.html">Tạo mã QR</a>
       <a href="history.html">Lịch sử</a>
-      <a id="nav-auth" class="btn-small" href="login.html">Đăng nhập</a>
+      <a href="account.html" class="btn-small">Đăng nhập</a>
     </div>
   </nav>
 </header>
@@ -122,18 +122,5 @@
   </div>
   <div class="copy small">© 2025 QR Checker</div>
 </footer>
-<script>
-// Cập nhật nút navbar theo trạng thái
-(async function(){
-  const a = document.getElementById('nav-auth'); if(!a) return;
-  try{
-    const r = await fetch('/me');
-    if(r.status===200){ a.textContent='Tài khoản'; a.href='account.html'; }
-    else{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent('about.html'); }
-  }catch{
-    a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent('about.html');
-  }
-})();
-</script>
 </body>
 </html>

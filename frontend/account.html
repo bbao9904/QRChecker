@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>Tài khoản - QR Checker</title>
-  <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600,700&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="/style.css">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <header class="site-header">
   <nav class="nav">
     <div class="nav__brand">
       <a href="index.html" class="nav__logo">
-        <img src="https://upload.wikimedia.org/wikipedia/vi/thumb/2/2d/Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8dc_FPT.svg/240px-Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8dc_FPT.svg.png" alt="FPT">
+        <img src="https://upload.wikimedia.org/wikipedia/vi/thumb/2/2d/Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8dc_FPT.svg/240px-Logo_Tr%C6%B0%E1%BB%9Dng_%C4%90%E1%BA%A1i_h%E1%BB%8Dc_FPT.svg.png" alt="FPT">
       </a>
       <span class="nav__title">QR Checker</span>
     </div>
@@ -23,28 +23,88 @@
       <a href="guide.html">Hướng dẫn</a>
       <a href="create.html">Tạo mã QR</a>
       <a href="history.html">Lịch sử</a>
-      <a href="account.html" class="btn-small active">Đăng nhập</a>
+      <a id="nav-auth" class="btn-small" href="account.html">Tài khoản</a>
     </div>
   </nav>
 </header>
 
 <section class="scan-wrapper" style="padding-top:40px;">
-  <h1 class="section-title">Tài khoản</h1>
-  <div class="card">
-    <h3>Tính năng sắp ra mắt</h3>
-    <p>Sẽ hỗ trợ đăng ký / đăng nhập, lưu whitelist, lịch sử đám mây, cảnh báo nâng cao.</p>
-    <p class="mt-1">Đang phát triển. Theo dõi để cập nhật.</p>
-    <a href="index.html#scan" class="btn btn--accent mt-1">Quét ngay</a>
+  <div id="guard" class="card" style="max-width:600px;margin:0 auto;display:none;text-align:center;">
+    <h3>Bạn cần đăng nhập để xem trang này</h3>
+    <p style="margin:8px 0 16px;color:#555;">Vui lòng đăng nhập để tiếp tục.</p>
+    <a class="btn btn--primary" id="btnLogin">Đăng nhập</a>
+    <a class="btn btn--ghost" href="register.html" style="margin-left:8px;">Đăng ký</a>
+  </div>
+
+  <div id="authed" class="card" style="max-width:600px;margin:0 auto;display:none;">
+    <h2>Thông tin tài khoản</h2>
+    <div id="user-info">Đang tải...</div>
   </div>
 </section>
 
-<footer class="site-footer">
-  <div class="footer-grid">
-    <div><h4>QR Checker</h4><p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p></div>
-    <div><h5>Chức năng</h5><ul><li><a href="index.html#scan">Quét mã QR</a></li><li><a href="create.html">Tạo mã</a></li><li><a href="history.html">Lịch sử</a></li></ul></div>
-    <div><h5>Hỗ trợ</h5><ul><li><a href="guide.html">Hướng dẫn</a></li><li><a href="about.html">Giới thiệu</a></li></ul></div>
-  </div>
-  <div class="copy small">© 2025 QR Checker</div>
-</footer>
+ <!-- FOOTER -->
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div>
+                <h4>QR Checker</h4>
+                <p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p>
+            </div>
+            <div>
+                <h5>Chức năng</h5>
+                <ul>
+                    <li><a href="#scan">Quét mã QR</a></li>
+                    <li><a href="create.html">Tạo mã</a></li>
+                    <li><a href="history.html">Lịch sử</a></li>
+                </ul>
+            </div>
+            <div>
+                <h5>Hỗ trợ</h5>
+                <ul>
+                    <li><a href="guide.html">Hướng dẫn</a></li>
+                    <li><a href="about.html">Giới thiệu</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copy small">© 2025 QR Checker</div>
+    </footer>
+
+<script>
+(async ()=>{
+  const r = await fetch('/me');
+  const isAuthed = r.status===200;
+  document.getElementById('guard').style.display = isAuthed ? 'none' : 'block';
+  document.getElementById('authed').style.display = isAuthed ? 'block' : 'none';
+  document.getElementById('btnLogin')?.addEventListener('click', ()=>{
+    location.href = 'login.html?next=' + encodeURIComponent('account.html');
+  });
+  if(isAuthed){
+    const me = await r.json();
+    document.getElementById('user-info').innerHTML = `
+      <div class="kv"><span>Tài khoản</span><code>${me.username}</code></div>
+      <div class="kv"><span>Quyền</span><code>${me.is_admin? 'Admin':'User'}</code></div>
+      <div style="margin-top:10px;">
+        <button class="btn btn--outline" onclick="logout()">Đăng xuất</button>
+        ${me.is_admin ? '<a class="btn btn--accent" style="margin-left:8px" href="admin.html">Trang quản trị</a>' : ''}
+      </div>`;
+  }
+})();
+async function logout(){ await fetch('/logout'); location.href='login.html'; }
+
+// Navbar auth label/link
+(async function(){
+  const a = document.getElementById('nav-auth'); if(!a) return;
+  try{
+    const r = await fetch('/me');
+    if(r.status===200){ a.textContent='Tài khoản'; a.href='account.html'; }
+    else{
+      a.textContent='Đăng nhập';
+      a.href='login.html?next=' + encodeURIComponent(location.pathname);
+    }
+  }catch{
+    a.textContent='Đăng nhập';
+    a.href='login.html?next=' + encodeURIComponent(location.pathname);
+  }
+})();
+</script>
 </body>
 </html>

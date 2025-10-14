@@ -22,12 +22,12 @@
             <input type="checkbox" id="nav-toggle">
             <label for="nav-toggle" class="nav__toggle"><span></span></label>
             <div class="nav__links">
-  <a href="about.html">Giới thiệu</a>
-  <a href="guide.html">Hướng dẫn</a>
-  <a href="create.html">Tạo mã QR</a>
-  <a href="history.html">Lịch sử</a>
-  <a id="nav-auth" class="btn-small" href="login.html">Đăng nhập</a>
-</div>
+                <a href="about.html">Giới thiệu</a>
+                <a href="guide.html">Hướng dẫn</a>
+                <a href="create.html">Tạo mã QR</a>
+                <a href="history.html">Lịch sử</a>
+                <a href="account.html" class="btn-small">Đăng nhập</a>
+            </div>
         </nav>
     </header>
 
@@ -35,7 +35,7 @@
     <section class="hero">
         <div class="hero__content">
             <h1>Kiểm tra & Tạo mã QR An Toàn</h1>
-            <p>Quét – Phân tích – Cảnh báo – Lịch sử – Tạo mã QR bảo mật.</p>
+            <p>Quét – Phân tích – Cảnh báo – Lịch sử – Whitelist tài khoản thanh toán.</p>
             <div class="hero__actions">
                 <a href="#scan" class="btn btn--primary">Quét ngay</a>
                 <a href="create.html" class="btn btn--primary">Tạo mã QR</a>
@@ -349,20 +349,20 @@ function handleFile(file){
   const fd=new FormData();
   fd.append('file', file);
   fetch('/scan',{method:'POST', body:fd})
-    .then(async r=>{ if(r.status===401){ showLoginNeeded(); return null; } return r.json(); })
-    .then(d=>{ if(d) showResult(d); })
+    .then(r=>r.json())
+    .then(showResult)
     .catch(()=>setResultHTML('<p class="error">Lỗi khi quét.</p>'));
 }
 
-function showLoginNeeded(){
-  setResultHTML('<div class="error" style="text-align:center">Bạn cần đăng nhập để sử dụng. <a href="login.html?next=index.html#scan">Đăng nhập</a></div>');
-}
-// sửa 2 chỗ fetch tới /scan để bắt 401
 async function sendRaw(text){
   showLoading();
-  const r = await fetch('/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({qr_data:text})});
-  if(r.status===401){ showLoginNeeded(); return; }
-  const data = await r.json(); showResult(data);
+  const res=await fetch('/scan',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({qr_data:text})
+  });
+  const data=await res.json();
+  showResult(data);
 }
 
 function showResult(data){
@@ -405,22 +405,6 @@ function showResult(data){
 function escapeHTML(str){
   return str.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
 }
-
-// === Navbar auth label/link ===
-(async function(){
-  const a = document.getElementById('nav-auth'); if(!a) return;
-  try{
-    const r = await fetch('/me');
-    if(r.status===200){ a.textContent='Tài khoản'; a.href='account.html'; }
-    else{
-      a.textContent='Đăng nhập';
-      a.href='login.html?next=' + encodeURIComponent(location.pathname + (location.hash||''));
-    }
-  }catch{
-    a.textContent='Đăng nhập';
-    a.href='login.html?next=' + encodeURIComponent(location.pathname + (location.hash||''));
-  }
-})();
 </script>
 </body>
 </html>
