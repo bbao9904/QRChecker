@@ -1,7 +1,0 @@
-flask
-pyzbar
-pillow
-gunicorn
-qrcode
-opencv-python
-requests
