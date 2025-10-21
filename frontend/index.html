@@ -167,8 +167,15 @@ const cameraError = document.getElementById('camera-error');
 let html5QrCode;
 let cameraActive = false;
 let cameraPaused = false;
-let lastDeviceId = null;       // lưu device để mở lại
-let usedFacingMode = false;    // đánh dấu dùng facingMode environment
+let lastDeviceId = null;
+let usedFacingMode = false;
+
+// Chống quét lặp
+let scanLock = false;              // chặn re-entry callback
+let lastDecodedText = '';
+let lastDecodedAt = 0;
+const DUP_WINDOW_MS = 1200;        // bỏ qua nếu trùng trong ~1.2s
+let scanRequestInFlight = false;   // chặn gửi /scan trùng lúc đang xử lý
 
 /* ===== Helpers ===== */
 function setResultHTML(html){ resultDiv.innerHTML = html; }
@@ -176,6 +183,11 @@ function showLoading(){
   setResultHTML('<div class="loading"><div class="spinner"></div><span>Đang phân tích...</span></div>');
 }
 function classifyStatus(data){
+  if(data.wifi) return {label:'WiFi', cls:'tag accent'};
+  if(data.email) return {label:'Email', cls:'tag neutral'};
+  if(data.phone) return {label:'Phone', cls:'tag neutral'};
+  if(data.sms) return {label:'SMS', cls:'tag neutral'};
+  if(data.text) return {label:'Text', cls:'tag neutral'};
   if(data.vietqr_info) return {label:'VietQR', cls:'tag accent'};
   if(data.details){
     if(data.details.malicious>0) return {label:'Malicious', cls:'tag danger'};
@@ -333,8 +345,25 @@ function parseCameraError(err){
 }
 
 async function onDecoded(decodedText){
-  await sendRaw(decodedText);
-  await stopCamera();
+  const now = Date.now();
+
+  // Bỏ qua nếu đang xử lý hoặc trùng nội dung trong cửa sổ thời gian
+  if (scanLock) return;
+  if (decodedText === lastDecodedText && (now - lastDecodedAt) < DUP_WINDOW_MS) return;
+
+  // Đặt khóa ngay lập tức để chặn callback kế tiếp
+  scanLock = true;
+  lastDecodedText = decodedText;
+  lastDecodedAt = now;
+
+  try {
+    await sendRaw(decodedText);
+  } finally {
+    // Dừng camera sau khi có kết quả
+    await stopCamera();
+    // Mở khóa (nếu bạn resume camera sau này)
+    scanLock = false;
+  }
 }
 
 /* ===== Core Scan ===== */
@@ -359,10 +388,36 @@ function showLoginNeeded(){
 }
 // sửa 2 chỗ fetch tới /scan để bắt 401
 async function sendRaw(text){
+  if (scanRequestInFlight) return;   // đang có request trước đó
+  scanRequestInFlight = true;
+
   showLoading();
-  const r = await fetch('/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({qr_data:text})});
-  if(r.status===401){ showLoginNeeded(); return; }
-  const data = await r.json(); showResult(data);
+  try{
+    const r = await fetch('/scan',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({qr_data:text})
+    });
+    if(r.status===401){ showLoginNeeded(); return; }
+    const data = await r.json();
+    showResult(data);
+  }catch(e){
+    setResultHTML('<p class="error">Lỗi khi quét.</p>');
+  }finally{
+    scanRequestInFlight = false;
+  }
+}
+
+function escapeHTML(str){
+  return str.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
+
+// Helper nhận diện URL để tạo link khi an toàn
+function isLikelyUrl(s){
+  if(!s || typeof s!=='string') return false;
+  try{ const u = new URL(s); return !!u.protocol && !!u.host; }catch(e){
+    return /^https?:\/\/[^\s]+$/i.test(s);
+  }
 }
 
 function showResult(data){
@@ -371,7 +426,76 @@ function showResult(data){
       <span class="${status.cls}">${status.label}</span>
       <span class="status-text">${data.result||'Kết quả'}</span>
   </div>`;
-  if(data.data){
+
+  // WiFi
+  if(data.wifi){
+    const w = data.wifi;
+    html+=`<div class="sub-block">
+      <h4>WiFi</h4>
+      <div class="kv"><span>Tên mạng:</span><code>${escapeHTML(w.ssid||'')}</code></div>
+      <div class="kv"><span>Mật khẩu:</span><code>${escapeHTML(w.password||'(không)')}</code></div>
+      <div class="kv"><span>Mã hóa:</span><code>${escapeHTML((w.encryption||'').toUpperCase())}</code></div>
+      <div class="kv"><span>Ẩn mạng:</span><code>${w.hidden ? 'true' : 'false'}</code></div>
+    </div>`;
+  }
+
+  // Email
+  if(data.email){
+    const e = data.email;
+    html+=`<div class="sub-block">
+      <h4>Email</h4>
+      <div class="kv"><span>Đến:</span><code>${escapeHTML(e.to||'')}</code></div>
+      ${e.cc?`<div class="kv"><span>CC:</span><code>${escapeHTML(e.cc)}</code></div>`:''}
+      ${e.bcc?`<div class="kv"><span>BCC:</span><code>${escapeHTML(e.bcc)}</code></div>`:''}
+      ${e.subject?`<div class="kv"><span>Tiêu đề:</span><code>${escapeHTML(e.subject)}</code></div>`:''}
+      ${e.body?`<div class="kv"><span>Nội dung:</span><pre style="white-space:pre-wrap;margin:6px 0 0;">${escapeHTML(e.body)}</pre></div>`:''}
+    </div>`;
+  }
+
+  // Phone
+  if(data.phone){
+    const p = data.phone;
+    html+=`<div class="sub-block">
+      <h4>Điện thoại</h4>
+      <div class="kv"><span>Số:</span><code>${escapeHTML(p.number||'')}</code></div>
+    </div>`;
+  }
+
+  // SMS
+  if(data.sms){
+    const s = data.sms;
+    html+=`<div class="sub-block">
+      <h4>SMS</h4>
+      <div class="kv"><span>Số:</span><code>${escapeHTML(s.number||'')}</code></div>
+      ${s.body?`<div class="kv"><span>Nội dung:</span><pre style="white-space:pre-wrap;margin:6px 0 0;">${escapeHTML(s.body)}</pre></div>`:''}
+    </div>`;
+  }
+
+  // Text
+  if(data.text){
+    const t = data.text;
+    html+=`<div class="sub-block">
+      <h4>Văn bản</h4>
+      <pre style="white-space:pre-wrap;word-break:break-word;margin:6px 0 0;">${escapeHTML(t.content||'')}</pre>
+    </div>`;
+  }
+
+  // Link an toàn (Clean) -> hiển thị đường dẫn có thể bấm
+  const likelyUrl = data && data.data && isLikelyUrl(data.data);
+  const vt = data && data.details;
+  const safeByVT = !!(vt && vt.total>0 && vt.malicious===0 && vt.suspicious===0);
+  const safeByMsg = typeof data.result==='string' && data.result.toLowerCase().includes('an toàn');
+
+  if(likelyUrl && !data.wifi && !data.email && !data.phone && !data.sms && !data.text && (safeByVT || safeByMsg)){
+    const href = data.data;
+    html += `<div class="sub-block">
+      <h4>Liên kết</h4>
+      <a class="safe-link" href="${href}" target="_blank" rel="noopener noreferrer">${escapeHTML(href)}</a>
+    </div>`;
+  }
+
+  // Nếu không phải case trên, in nội dung thô
+  if(data.data && !data.wifi && !data.text && !data.email && !data.phone && !data.sms && !(likelyUrl && (safeByVT || safeByMsg))){
     html+=`<div class="kv"><span>Nội dung</span><code>${escapeHTML(data.data)}</code></div>`;
   }
   if(data.vietqr_info){
@@ -400,10 +524,6 @@ function showResult(data){
   }
   resultDiv.classList.remove('muted');
   setResultHTML(html);
-}
-
-function escapeHTML(str){
-  return str.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
 }
 
 // === Navbar auth label/link ===

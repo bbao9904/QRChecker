@@ -5,8 +5,9 @@ from datetime import timedelta
 from dotenv import load_dotenv
 # Thêm các import còn thiếu
 import os, json, time, threading, base64, re
+#from pyngrok import ngrok
 import requests
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, unquote
 from PIL import Image
 from pyzbar.pyzbar import decode
 
@@ -266,6 +267,98 @@ def api_admin_delete_user():
     return jsonify({"status":"ok"})
 
 # ==== BẢO VỆ QUÉT ====
+def _unescape_wifi(v: str) -> str:
+    # Bỏ ngoặc kép ngoài cùng và unescape các ký tự
+    v = v.strip()
+    if len(v) >= 2 and v[0] == '"' and v[-1] == '"':
+        v = v[1:-1]
+    v = v.replace(r'\;', ';').replace(r'\:', ':').replace(r'\\', '\\').replace(r'\"', '"').replace(r'\,', ',')
+    return v
+
+def parse_wifi_qr(raw: str):
+    """
+    Chuẩn WIFI: WIFI:T:<auth>;S:<ssid>;P:<password>;H:<hidden>;;
+    Ví dụ: WIFI:T:WPA;P:"123456780";S:Wifi Anh Hoanh;
+    """
+    if not isinstance(raw, str) or not raw.upper().startswith('WIFI:'):
+        return None
+    s = raw[5:]  # bỏ "WIFI:"
+    # Tách theo ; không xét ; đã escape
+    parts, cur, esc = [], [], False
+    for ch in s:
+        if esc:
+            cur.append(ch); esc = False
+        elif ch == '\\':
+            esc = True
+        elif ch == ';':
+            parts.append(''.join(cur)); cur = []
+        else:
+            cur.append(ch)
+    if cur: parts.append(''.join(cur))
+
+    data = {}
+    for p in parts:
+        if not p: continue
+        # tách theo : đầu tiên (không xét : đã escape – đã xử lý ở vòng lặp)
+        k, sep, v = p.partition(':')
+        if not sep: continue
+        k = k.strip().upper()
+        v = _unescape_wifi(v.strip())
+        data[k] = v
+
+    auth = (data.get('T') or 'nopass').upper()
+    ssid = data.get('S') or ''
+    password = data.get('P') or ''
+    hidden_raw = (data.get('H') or 'false').strip().lower()
+    hidden = hidden_raw in ('1', 'true', 'yes', 'y')
+
+    return {
+        "encryption": auth,   # WPA | WEP | nopass
+        "ssid": ssid,
+        "password": password,
+        "hidden": hidden
+    }
+
+def looks_like_url(s: str) -> bool:
+    if not isinstance(s, str): return False
+    p = urlparse(s.strip())
+    return bool(p.scheme and p.netloc)
+
+def parse_mailto(raw: str):
+    if not isinstance(raw, str) or not raw.lower().startswith('mailto:'):
+        return None
+    s = raw[7:]
+    addr_part, _, qs = s.partition('?')
+    to_addr = unquote(addr_part).strip()
+    q = parse_qs(qs)
+    subject = unquote(q.get('subject', [''])[0])
+    body = unquote(q.get('body', [''])[0])
+    cc = unquote(','.join(q.get('cc', []))) if 'cc' in q else ''
+    bcc = unquote(','.join(q.get('bcc', []))) if 'bcc' in q else ''
+    return {"to": to_addr, "subject": subject, "body": body, "cc": cc, "bcc": bcc}
+
+def parse_tel(raw: str):
+    if not isinstance(raw, str) or not raw.lower().startswith('tel:'):
+        return None
+    return {"number": unquote(raw[4:]).strip()}
+
+def parse_sms(raw: str):
+    if not isinstance(raw, str):
+        return None
+    s = raw.strip()
+    ls = s.lower()
+    if ls.startswith('sms:'):
+        r = s[4:]
+        num, sep, qs = r.partition('?')
+        q = parse_qs(qs)
+        body = unquote(q.get('body', [''])[0]) if sep else ''
+        return {"number": unquote(num).strip(), "body": body}
+    if ls.startswith('smsto:'):
+        r = s[6:]
+        num, sep, body = r.partition(':')
+        return {"number": unquote(num).strip(), "body": unquote(body)}
+    return None
+
 @app.route('/scan', methods=['POST'])
 def scan_qr():
     if "user_id" not in session:
@@ -283,24 +376,75 @@ def scan_qr():
             qr_data = data.get('qr_data')
             if not qr_data:
                 return jsonify({"result": "Không tìm thấy mã QR!"})
-        if qr_data in SAFE_QR_LIST:
-            return jsonify({"result": "Mã QR an toàn", "data": qr_data})
-        else:
-            # Kiểm tra thêm về độ an toàn của URL
-            is_safe, message, vt_details = check_url_safety(qr_data)
-            if not is_safe:
-                return jsonify({
-                    "result": f"Cảnh báo: {message}",
-                    "data": qr_data,
-                    "details": vt_details,
-                    "is_safe": False
-                })
+
+        # 1) WiFi QR
+        wifi_info = parse_wifi_qr(qr_data)
+        if wifi_info:
             return jsonify({
-                "result": message,
+                "result": "Thông tin WiFi",
                 "data": qr_data,
-                "details": vt_details,
+                "wifi": wifi_info,
                 "is_safe": True
             })
+
+        # 1.1) Email (mailto:)
+        email_info = parse_mailto(qr_data)
+        if email_info:
+            return jsonify({
+                "result": "Email",
+                "data": qr_data,
+                "email": email_info,
+                "is_safe": True
+            })
+
+        # 1.2) Điện thoại (tel:)
+        phone_info = parse_tel(qr_data)
+        if phone_info:
+            return jsonify({
+                "result": "Số điện thoại",
+                "data": qr_data,
+                "phone": phone_info,
+                "is_safe": True
+            })
+
+        # 1.3) SMS (sms:/SMSTO:)
+        sms_info = parse_sms(qr_data)
+        if sms_info:
+            return jsonify({
+                "result": "Tin nhắn SMS",
+                "data": qr_data,
+                "sms": sms_info,
+                "is_safe": True
+            })
+
+        # 1.5) Plain text (không phải URL http/https)
+        if not looks_like_url(qr_data):
+            return jsonify({
+                "result": "Nội dung văn bản",
+                "data": qr_data,
+                "text": { "content": qr_data, "length": len(qr_data) },
+                "is_safe": True
+            })
+
+        # 2) Danh sách an toàn cục bộ
+        if qr_data in SAFE_QR_LIST:
+            return jsonify({"result": "Mã QR an toàn", "data": qr_data, "is_safe": True})
+
+        # 3) Kiểm tra URL (VirusTotal)
+        is_safe, message, vt_details = check_url_safety(qr_data)
+        if not is_safe:
+            return jsonify({
+                "result": f"Cảnh báo: {message}",
+                "data": qr_data,
+                "details": vt_details,
+                "is_safe": False
+            })
+        return jsonify({
+            "result": message,
+            "data": qr_data,
+            "details": vt_details,
+            "is_safe": True
+        })
     except Exception as e:
         return jsonify({
             "result": f"Lỗi khi quét mã QR: {str(e)}",
@@ -337,7 +481,7 @@ if __name__ == "__main__":
 #if __name__ == "__main__":
     # Cấu hình ngrok authtoken
  
- #   ngrok.set_auth_token("YOUR_AUTHTOKEN_HERE")
+ #   ngrok.set_auth_token("333PmHKp8go913NiokiYTi6FEWm_Utb5pk5GVq59EFAVee9C")
     
     # Tạo HTTPS tunnel
   #  public_url = ngrok.connect(5000)
