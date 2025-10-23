@@ -5,4 +5,6 @@ gunicorn
 qrcode
 opencv-python
 requests
+python-dotenv
+pyzbar
 
