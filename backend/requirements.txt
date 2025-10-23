@@ -7,4 +7,4 @@ opencv-python
 requests
 python-dotenv
 pyzbar
-
+pyngrok

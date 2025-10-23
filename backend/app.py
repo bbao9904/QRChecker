@@ -5,7 +5,7 @@ from datetime import timedelta
 from dotenv import load_dotenv
 # Thêm các import còn thiếu
 import os, json, time, threading, base64, re
-from pyngrok import ngrok
+#from pyngrok import ngrok
 import requests
 from urllib.parse import urlparse, parse_qs, unquote
 from PIL import Image
@@ -473,18 +473,18 @@ def is_strong_password(pw: str) -> bool:
         and _pw_re_special.search(pw)
     )
 
-#if __name__ == "__main__":
- #   app.run(host="0.0.0.0", port=5000, ssl_context='adhoc')
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, ssl_context='adhoc')
 
     # ...existing code...
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     # Cấu hình ngrok authtoken
  
-    ngrok.set_auth_token("333PmHKp8go913NiokiYTi6FEWm_Utb5pk5GVq59EFAVee9C")
+ #   ngrok.set_auth_token("333PmHKp8go913NiokiYTi6FEWm_Utb5pk5GVq59EFAVee9C")
     
     # Tạo HTTPS tunnel
-    public_url = ngrok.connect(5000)
-    print(' * Truy cập web qua URL:', public_url)
+  #  public_url = ngrok.connect(5000)
+   # print(' * Truy cập web qua URL:', public_url)
     
-    app.run(host="0.0.0.0", port=5000)
+    #app.run(host="0.0.0.0", port=5000)
