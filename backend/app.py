@@ -474,7 +474,12 @@ def is_strong_password(pw: str) -> bool:
     )
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, ssl_context='adhoc')
+    # Chạy local (dev) thì mới dùng app.run()
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
+
+#if __name__ == "__main__":
+ #   app.run(host="0.0.0.0", port=5000, ssl_context='adhoc')
 
     # ...existing code...
 
