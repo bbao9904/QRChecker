@@ -1,10 +1,10 @@
 flask
 pyzbar
-pillow
+Pillow
 gunicorn
 qrcode
-opencv-python
+opencv-python-headless
 requests
 python-dotenv
-pyzbar
+
 
