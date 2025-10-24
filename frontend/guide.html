@@ -87,10 +87,6 @@
       <p>Có thể chạm giới hạn tần suất. Giãn cách vài giây mỗi lần.</p>
     </div>
     <div class="faq-item">
-      <h4>Ứng dụng có lưu nội dung QR của tôi không?<span>+</span></h4>
-      <p>Hiện chỉ lưu tạm trong phiên. Lịch sử đám mây sẽ yêu cầu bạn bật.</p>
-    </div>
-    <div class="faq-item">
       <h4>Tôi có thể thêm whitelist tài khoản VietQR không?<span>+</span></h4>
       <p>Đang phát triển. Sẽ có trong mục Tài khoản.</p>
     </div>
@@ -98,14 +94,59 @@
       <h4>Tại sao URL “Đáng ngờ” nhưng vẫn mở bình thường?<span>+</span></h4>
       <p>Engine thấy dấu hiệu rủi ro nhẹ. Không nên nhập thông tin nhạy cảm.</p>
     </div>
+      <div class="faq-item">
+    <h4>Mã QR Wi‑Fi có độc hại không?<span>+</span></h4>
+    <p>Mã Wi‑Fi chỉ chứa SSID, kiểu mã hóa và mật khẩu; không có liên kết/mã thực thi. Rủi ro là bạn kết nối vào mạng giả mạo. Ứng dụng chỉ hiển thị thông tin, không đánh giá an toàn mạng.</p>
+  </div>
+  <div class="faq-item">
+    <h4>Mã QR Text có độc hại không?<span>+</span></h4>
+    <p>Text là văn bản thuần. Nếu bên trong có URL, hãy kiểm tra URL đó. Văn bản thuần không có báo cáo VirusTotal.</p>
+  </div>
+  <div class="faq-item">
+    <h4>Mã QR Phone (tel:) có độc hại không?<span>+</span></h4>
+    <p>tel: chỉ mở ứng dụng gọi với số điền sẵn, không tự gọi. Kiểm tra số trước khi thực hiện. Không áp dụng VirusTotal.</p>
+  </div>
+  <div class="faq-item">
+    <h4>Mã QR SMS (sms:/SMSTO:) có độc hại không?<span>+</span></h4>
+    <p>sms:/SMSTO: chỉ mở ứng dụng SMS với nội dung/số soạn sẵn, không tự gửi. Xem lại trước khi gửi. Không có phân tích URL.</p>
+  </div>
+  <div class="faq-item">
+    <h4>Mã QR Email (mailto:) có độc hại không?<span>+</span></h4>
+    <p>mailto: mở ứng dụng email với nội dung soạn sẵn, không tự gửi. Kiểm tra người nhận/nội dung. Không áp dụng VirusTotal.</p>
+  </div>
+  <div class="faq-item">
+    <h4>Vì sao Wi‑Fi/Text/Phone/SMS/Email không có “kết quả phân tích”?<span>+</span></h4>
+    <p>Phân tích an toàn chỉ áp dụng cho liên kết http/https. Các loại QR khác được nhận diện và hiển thị chi tiết nhưng không gọi engine kiểm tra URL nên không có thống kê Clean/Suspicious/Malicious.</p>
+  </div>
   </div>
 
   <p style="text-align:center;font-size:.7rem;color:#666;margin-top:30px;">Tài liệu ngắn gọn – sẽ cập nhật khi có tính năng mới.</p>
 </section>
 
-<footer class="site-footer">
-  <div class="copy small">© 2025 QR Checker</div>
-</footer>
+ <footer class="site-footer">
+        <div class="footer-grid">
+            <div>
+                <h4>QR Checker</h4>
+                <p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p>
+            </div>
+            <div>
+                <h5>Chức năng</h5>
+                <ul>
+                    <li><a href="#scan">Quét mã QR</a></li>
+                    <li><a href="create.html">Tạo mã</a></li>
+                    <li><a href="history.html">Lịch sử</a></li>
+                </ul>
+            </div>
+            <div>
+                <h5>Hỗ trợ</h5>
+                <ul>
+                    <li><a href="guide.html">Hướng dẫn</a></li>
+                    <li><a href="about.html">Giới thiệu</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copy small">© 2025 QR Checker</div>
+    </footer>
 
 <script>
 // Cập nhật nút navbar theo trạng thái
