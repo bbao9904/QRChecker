@@ -998,3 +998,290 @@ body{
   }
 }
 
+/* ==== Pricing Page Styles ==== */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.pricing-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+  position: relative;
+}
+
+.pricing-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+}
+
+.pricing-card.featured {
+  border: 3px solid var(--orange);
+  transform: scale(1.05);
+}
+
+.pricing-card.featured:hover {
+  transform: scale(1.05) translateY(-8px);
+}
+
+.pricing-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--orange);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.pricing-badge.best {
+  background: linear-gradient(135deg, #ff6d00, #ff9100);
+}
+
+.pricing-header {
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.pricing-header.free {
+  background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+}
+
+.pricing-header.monthly {
+  background: linear-gradient(135deg, var(--orange), var(--amber));
+}
+
+.pricing-header.yearly {
+  background: linear-gradient(135deg, #ff6d00, #ff9100);
+}
+
+.pricing-header h3 {
+  margin: 0 0 12px;
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.pricing-header.free h3 {
+  color: #333;
+}
+
+.pricing-price {
+  font-size: 36px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.pricing-header.free .pricing-price {
+  color: #333;
+}
+
+.pricing-price span {
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.pricing-save {
+  background: rgba(255,255,255,0.3);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  margin-top: 8px;
+}
+
+.pricing-body {
+  padding: 24px;
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+}
+
+.pricing-features li {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pricing-features li:last-child {
+  border-bottom: none;
+}
+
+.pricing-features strong {
+  color: var(--orange-dark);
+}
+
+/* ==== Account Subscription Styles ==== */
+.sub-status {
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sub-status.admin {
+  background: linear-gradient(135deg, #ff6600, #ff9100);
+  color: white;
+}
+
+.sub-status.premium {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+}
+
+.sub-status.free {
+  background: #f5f5f5;
+  border: 2px solid #ddd;
+}
+
+.sub-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.sub-details h4 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.sub-details p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* ==== Pricing Contact Styles ==== */
+.contact-card {
+  background: linear-gradient(135deg, #fff5e6, #fff);
+  border: 2px solid var(--orange);
+}
+
+.contact-info {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.contact-icon {
+  font-size: 32px;
+}
+
+.contact-details h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: #666;
+}
+
+.contact-link {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--orange);
+  text-decoration: none;
+}
+
+.contact-link:hover {
+  text-decoration: underline;
+}
+
+.purchase-steps {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.purchase-steps h4 {
+  margin: 0 0 12px;
+}
+
+.purchase-steps ol {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.purchase-steps li {
+  padding: 8px 0;
+  line-height: 1.6;
+}
+
+.payment-note {
+  padding: 16px;
+  background: #e3f2fd;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.payment-note p {
+  margin: 0;
+  color: #1565c0;
+}
+
+/* ==== Admin Subscription Modal ==== */
+.sub-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.sub-plan-btn {
+  padding: 16px;
+  border: 2px solid #ddd;
+  background: white;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sub-plan-btn:hover {
+  border-color: var(--orange);
+  background: #fff5e6;
+  transform: translateY(-2px);
+}
+
+.sub-plan-btn .plan-name {
+  font-weight: 700;
+  color: #333;
+}
+
+.sub-plan-btn .plan-price {
+  font-size: 14px;
+  color: var(--orange);
+  font-weight: 600;
+}
+

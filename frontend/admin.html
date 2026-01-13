@@ -88,6 +88,44 @@
       </div>
     </div>
   </div>
+  
+  <!-- Subscription Modal -->
+  <div id="subscription-modal" class="modal" style="display:none;">
+    <div class="modal-overlay" onclick="closeSubscriptionModal()"></div>
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2 id="sub-modal-title">Quản lý gói</h2>
+        <button class="modal-close" onclick="closeSubscriptionModal()">✕</button>
+      </div>
+      
+      <div class="modal-body">
+        <h4>Trạng thái hiện tại:</h4>
+        <div id="sub-current-info">
+          <div class="loading"><div class="spinner"></div><span>Đang tải...</span></div>
+        </div>
+        
+        <h4 style="margin-top: 24px;">Kích hoạt gói mới:</h4>
+        <div class="sub-plan-grid">
+          <button class="sub-plan-btn" onclick="activateSubscription('1_month')">
+            <span class="plan-name">1 tháng</span>
+            <span class="plan-price">30,000đ</span>
+          </button>
+          <button class="sub-plan-btn" onclick="activateSubscription('3_months')">
+            <span class="plan-name">3 tháng</span>
+            <span class="plan-price">80,000đ</span>
+          </button>
+          <button class="sub-plan-btn" onclick="activateSubscription('6_months')">
+            <span class="plan-name">6 tháng</span>
+            <span class="plan-price">150,000đ</span>
+          </button>
+          <button class="sub-plan-btn" onclick="activateSubscription('1_year')">
+            <span class="plan-name">1 năm</span>
+            <span class="plan-price">280,000đ</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <footer class="site-footer">
@@ -135,7 +173,7 @@ let currentUserId = null;
   }
 })();
 
-// Load users
+// Load users - CẬP NHẬT
 async function loadUsers() {
   const listDiv = document.getElementById('users-list');
   
@@ -144,28 +182,59 @@ async function loadUsers() {
     const users = await response.json();
     
     if (users.length > 0) {
-      listDiv.innerHTML = users.map(user => `
-        <div class="admin-user-item">
-          <div class="admin-user-info">
-            <div class="admin-user-name">
-              <strong>${escapeHtml(user.username)}</strong>
-              ${user.is_admin ? '<span class="tag danger" style="margin-left: 8px;">👑 Admin</span>' : ''}
+      // Load subscription info for each user
+      const usersWithSub = await Promise.all(users.map(async user => {
+        if (user.is_admin) {
+          return { ...user, subscription: null };
+        }
+        try {
+          const subRes = await fetch(`/admin/user/${user.id}/subscription`, { credentials: 'include' });
+          const subData = await subRes.json();
+          return { ...user, subscription: subData };
+        } catch {
+          return { ...user, subscription: null };
+        }
+      }));
+      
+      listDiv.innerHTML = usersWithSub.map(user => {
+        let subBadge = '';
+        if (user.is_admin) {
+          subBadge = '<span class="tag accent">👑 Admin</span>';
+        } else if (user.subscription?.has_subscription) {
+          const endDate = new Date(user.subscription.end_date).toLocaleDateString('vi-VN');
+          subBadge = `<span class="tag safe">⭐ ${user.subscription.plan_name} (đến ${endDate})</span>`;
+        } else {
+          const remaining = user.subscription?.free_scans_remaining ?? '?';
+          const limit = user.subscription?.free_scan_limit ?? 5;
+          subBadge = `<span class="tag neutral">📱 Free (${remaining}/${limit} quét)</span>`;
+        }
+        
+        return `
+          <div class="admin-user-item">
+            <div class="admin-user-info">
+              <div class="admin-user-name">
+                <strong>${escapeHtml(user.username)}</strong>
+                ${subBadge}
+              </div>
+              <div class="admin-user-email">${escapeHtml(user.email)}</div>
             </div>
-            <div class="admin-user-email">${escapeHtml(user.email)}</div>
-          </div>
-          <div class="admin-user-actions">
-            <button class="btn btn--outline" onclick="viewUserHistory(${user.id}, '${escapeHtml(user.username)}')">
-              📊 Xem lịch sử
-            </button>
-            ${!user.is_admin ? `
-              <button class="btn btn--outline" style="color: #dc3545; border-color: #dc3545;" 
-                      onclick="deleteUser(${user.id}, '${escapeHtml(user.username)}')">
-                🗑️ Xóa
+            <div class="admin-user-actions">
+              <button class="btn btn--outline" onclick="viewUserHistory(${user.id}, '${escapeHtml(user.username)}')">
+                📊 Lịch sử
               </button>
-            ` : ''}
+              ${!user.is_admin ? `
+                <button class="btn btn--primary" onclick="openSubscriptionModal(${user.id}, '${escapeHtml(user.username)}')">
+                  💎 Quản lý gói
+                </button>
+                <button class="btn btn--outline" style="color: #dc3545; border-color: #dc3545;" 
+                        onclick="deleteUser(${user.id}, '${escapeHtml(user.username)}')">
+                  🗑️ Xóa
+                </button>
+              ` : ''}
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     } else {
       listDiv.innerHTML = '<p class="empty-message">Không có người dùng nào.</p>';
     }
@@ -375,6 +444,116 @@ document.querySelectorAll('.history-tab').forEach(tab => {
     document.getElementById(`modal-tab-${tabName}`).classList.add('active');
   });
 });
+
+// Subscription Modal
+let subscriptionUserId = null;
+let subscriptionUsername = '';
+
+function openSubscriptionModal(userId, username) {
+  subscriptionUserId = userId;
+  subscriptionUsername = username;
+  
+  const modal = document.getElementById('subscription-modal');
+  document.getElementById('sub-modal-title').textContent = `Quản lý gói - ${username}`;
+  modal.style.display = 'flex';
+  
+  loadUserSubscriptionInfo(userId);
+}
+
+function closeSubscriptionModal() {
+  document.getElementById('subscription-modal').style.display = 'none';
+  subscriptionUserId = null;
+  subscriptionUsername = '';
+}
+
+async function loadUserSubscriptionInfo(userId) {
+  const infoDiv = document.getElementById('sub-current-info');
+  
+  try {
+    const response = await fetch(`/admin/user/${userId}/subscription`, { credentials: 'include' });
+    const data = await response.json();
+    
+    if (data.has_subscription) {
+      const endDate = new Date(data.end_date).toLocaleDateString('vi-VN');
+      infoDiv.innerHTML = `
+        <div class="sub-status premium">
+          <h4>⭐ ${data.plan_name}</h4>
+          <p>Hết hạn: <strong>${endDate}</strong></p>
+          <button class="btn btn--outline" style="margin-top: 12px; color: #dc3545; border-color: #dc3545;" 
+                  onclick="deactivateSubscription()">❌ Hủy gói</button>
+        </div>
+      `;
+    } else {
+      infoDiv.innerHTML = `
+        <div class="sub-status free">
+          <h4>📱 Gói Miễn phí</h4>
+          <p>Đã dùng: <strong>${data.free_scans_used}/${data.free_scan_limit}</strong> lượt quét</p>
+        </div>
+      `;
+    }
+  } catch (error) {
+    infoDiv.innerHTML = '<p class="error-message">❌ Không thể tải thông tin</p>';
+  }
+}
+
+async function activateSubscription(planType) {
+  if (!subscriptionUserId) return;
+  
+  const planNames = {
+    '1_month': 'Gói 1 tháng',
+    '3_months': 'Gói 3 tháng',
+    '6_months': 'Gói 6 tháng',
+    '1_year': 'Gói 1 năm'
+  };
+  
+  if (!confirm(`Kích hoạt ${planNames[planType]} cho ${subscriptionUsername}?`)) return;
+  
+  try {
+    const response = await fetch(`/admin/user/${subscriptionUserId}/subscription/activate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ plan_type: planType })
+    });
+    
+    const data = await response.json();
+    
+    if (data.status === 'ok') {
+      alert(data.msg);
+      loadUserSubscriptionInfo(subscriptionUserId);
+      loadUsers(); // Reload user list
+    } else {
+      alert('❌ ' + data.msg);
+    }
+  } catch (error) {
+    alert('❌ Lỗi: ' + error.message);
+  }
+}
+
+async function deactivateSubscription() {
+  if (!subscriptionUserId) return;
+  
+  if (!confirm(`Hủy gói Premium của ${subscriptionUsername}?`)) return;
+  
+  try {
+    const response = await fetch(`/admin/user/${subscriptionUserId}/subscription/deactivate`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    
+    const data = await response.json();
+    
+    if (data.status === 'ok') {
+      alert(data.msg);
+      loadUserSubscriptionInfo(subscriptionUserId);
+      loadUsers();
+    } else {
+      alert('❌ ' + data.msg);
+    }
+  } catch (error) {
+    alert('❌ Lỗi: ' + error.message);
+  }
+}
 
 // Helper functions
 function getTypeIcon(type) {

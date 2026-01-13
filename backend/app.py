@@ -13,6 +13,10 @@ from pyzbar.pyzbar import decode
 import qrcode
 from io import BytesIO
 
+# Import subscription modules
+from subscription import init_subscription_tables, check_scan_permission, check_feature_permission
+from subscription_routes import subscription_bp
+
 load_dotenv()
 
 app = Flask(
@@ -23,6 +27,9 @@ app = Flask(
 )
 app.secret_key = os.getenv("APP_SECRET", "dev_change_me")
 app.permanent_session_lifetime = timedelta(days=7)
+
+# Register subscription blueprint
+app.register_blueprint(subscription_bp)
 
 VIRUSTOTAL_API_KEY = "4f89f9c7346c91969c99187def022dd96052b0c18b205ec2942813513e219ce5"
 
@@ -204,6 +211,9 @@ def init_db():
                   ("admin","admin@example.com", generate_password_hash("admin123")))
         conn.commit()
     conn.close()
+    
+    # Khởi tạo subscription tables
+    init_subscription_tables()
 
 init_db()
 
@@ -562,6 +572,12 @@ def scan_qr():
         return jsonify({"result":"Bạn cần đăng nhập để sử dụng chức năng này."}), 401
     
     user_id = session.get("user_id")
+    is_admin = session.get("is_admin", False)
+    
+    # Kiểm tra giới hạn quét
+    allowed, error_msg = check_scan_permission(user_id, is_admin)
+    if not allowed:
+        return jsonify(error_msg), 403
     
     try:
         if 'file' in request.files:
@@ -765,6 +781,12 @@ def create_qr():
         return jsonify({"status": "fail", "msg": "Bạn cần đăng nhập để sử dụng chức năng này"}), 401
     
     user_id = session.get("user_id")
+    is_admin = session.get("is_admin", False)
+    
+    # Kiểm tra quyền truy cập
+    allowed, error_msg = check_feature_permission(user_id, is_admin, 'create')
+    if not allowed:
+        return jsonify(error_msg), 403
     
     try:
         data = request.get_json()
@@ -1071,6 +1093,12 @@ def get_scan_history():
         return jsonify({"status": "fail", "msg": "Chưa đăng nhập"}), 401
     
     user_id = session.get("user_id")
+    is_admin = session.get("is_admin", False)
+    
+    allowed, error_msg = check_feature_permission(user_id, is_admin, 'history')
+    if not allowed:
+        return jsonify(error_msg), 403
+    
     conn = get_db(); c = conn.cursor()
     c.execute("""
         SELECT id, qr_type, qr_content, result, is_safe, details, created_at
@@ -1104,6 +1132,12 @@ def get_create_history():
         return jsonify({"status": "fail", "msg": "Chưa đăng nhập"}), 401
     
     user_id = session.get("user_id")
+    is_admin = session.get("is_admin", False)
+    
+    allowed, error_msg = check_feature_permission(user_id, is_admin, 'history')
+    if not allowed:
+        return jsonify(error_msg), 403
+    
     conn = get_db(); c = conn.cursor()
     c.execute("""
         SELECT id, qr_type, qr_content, qr_image, created_at

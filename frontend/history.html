@@ -28,6 +28,20 @@
   </nav>
 </header>
 
+<!-- Premium Guard -->
+<section id="premium-guard" class="scan-wrapper" style="padding-top:40px; display:none;">
+  <div class="card" style="max-width:720px;margin:0 auto;text-align:center;">
+    <h2>⭐ Chức năng Premium</h2>
+    <p class="small">Tính năng Xem lịch sử chỉ dành cho tài khoản Premium.</p>
+    <p style="margin: 16px 0;">Nâng cấp ngay để sử dụng không giới hạn!</p>
+    <div class="hero__actions" style="margin-top:12px; display:flex; justify-content:center; gap: 12px;">
+      <a href="pricing.html" class="btn btn--primary">🚀 Xem các gói Premium</a>
+      <a href="account.html" class="btn btn--outline">Tài khoản</a>
+    </div>
+  </div>
+</section>
+
+<!-- Auth Guard -->
 <section id="auth-guard" class="scan-wrapper" style="padding-top:40px; display:none;">
   <div class="card" style="max-width:720px;margin:0 auto;text-align:center;">
     <h2>Bạn cần đăng nhập</h2>
@@ -103,12 +117,14 @@
 </footer>
 
 <script>
-// Auth guard
+// Auth guard - CẬP NHẬT
 (async function(){
   const next = location.pathname + location.search + location.hash;
   const a = document.getElementById('nav-auth');
-  const guard = document.getElementById('auth-guard');
+  const authGuard = document.getElementById('auth-guard');
+  const premiumGuard = document.getElementById('premium-guard');
   const content = document.getElementById('feature-content');
+  
   const r = await fetch('/me', {credentials:'include'}).catch(()=>null);
   const authed = !!r && r.status === 200;
 
@@ -116,15 +132,29 @@
     if(authed){ a.textContent='Tài khoản'; a.href='account.html'; }
     else{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
   }
-  if(authed){
-    if(content) content.style.display='block';
-    if(guard) guard.style.display='none';
-    loadHistory();
-  }else{
+  
+  if(!authed){
     if(content) content.style.display='none';
-    if(guard) guard.style.display='block';
+    if(premiumGuard) premiumGuard.style.display='none';
+    if(authGuard) authGuard.style.display='block';
     const btn = document.getElementById('guard-login');
     if(btn) btn.href = 'login.html?next=' + encodeURIComponent(next);
+    return;
+  }
+  
+  // Kiểm tra subscription
+  const subRes = await fetch('/subscription/info', {credentials:'include'}).catch(()=>null);
+  const subData = subRes && subRes.status === 200 ? await subRes.json() : null;
+  
+  if(subData && (subData.is_admin || subData.has_subscription)){
+    if(content) content.style.display='block';
+    if(authGuard) authGuard.style.display='none';
+    if(premiumGuard) premiumGuard.style.display='none';
+    loadHistory();
+  } else {
+    if(content) content.style.display='none';
+    if(authGuard) authGuard.style.display='none';
+    if(premiumGuard) premiumGuard.style.display='block';
   }
 })();
 
@@ -212,16 +242,13 @@ async function loadCreateHistory() {
     
     if (data.status === 'ok' && data.history.length > 0) {
       listDiv.innerHTML = data.history.map(item => {
-        // Kiểm tra xem có phải URL không
         const isUrl = item.qr_type === 'url';
         const canClick = isUrl && looks_like_url_content(item.qr_content);
         
         let contentDisplay = '';
         if (canClick) {
-          // Nếu là URL -> tạo link có thể click
           contentDisplay = `<a href="${escapeHtml(item.qr_content)}" target="_blank" rel="noopener noreferrer" class="history-link">${escapeHtml(item.qr_content.substring(0, 80))}${item.qr_content.length > 80 ? '...' : ''}</a>`;
         } else {
-          // Nếu không phải URL -> hiển thị text
           contentDisplay = `<code>${escapeHtml(item.qr_content.substring(0, 80))}${item.qr_content.length > 80 ? '...' : ''}</code>`;
         }
         
@@ -367,10 +394,8 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Kiểm tra xem nội dung có phải URL không
 function looks_like_url_content(content) {
   if (!content) return false;
-  // Kiểm tra có bắt đầu bằng http://, https://, ftp://
   return /^(https?|ftp):\/\//i.test(content);
 }
 </script>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Nâng cấp Premium - QR Checker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .pricing-card.current-plan {
+      border: 3px solid #28a745;
+      position: relative;
+      padding-bottom: 50px; /* Thêm padding để chứa badge */
+    }
+    .pricing-card.current-plan::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(40, 167, 69, 0.05);
+      pointer-events: none;
+      border-radius: inherit;
+    }
+    .current-plan-badge {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #28a745, #20c997);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+      z-index: 100;
+    }
+    .pricing-card.current-plan .pricing-header {
+      background: linear-gradient(135deg, #28a745, #20c997) !important;
+    }
+    
+    /* Chữ trắng cho gói miễn phí khi là gói hiện tại */
+    .pricing-card.current-plan .pricing-header.free h3,
+    .pricing-card.current-plan .pricing-header.free .pricing-price {
+      color: white !important;
+    }
+    
+    /* Đảm bảo pricing-grid có overflow visible */
+    .pricing-grid {
+      overflow: visible;
+    }
+    
+    /* Thu nhỏ badge Phổ biến và Tiết kiệm nhất */
+    .pricing-badge {
+      font-size: 9px;
+      padding: 4px 10px;
+    }
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <nav class="nav">
+    <div class="nav__brand">
+      <a href="index.html" class="nav__logo">
+        <img src="assets/qr-checker-logo.png" alt="QR Checker" class="nav__logo-img">
+      </a>
+      <span class="nav__title">QR Checker</span>
+    </div>
+    <input type="checkbox" id="nav-toggle">
+    <label for="nav-toggle" class="nav__toggle"><span></span></label>
+    <div class="nav__links">
+      <a href="about.html">Giới thiệu</a>
+      <a href="guide.html">Hướng dẫn</a>
+      <a href="create.html">Tạo mã QR</a>
+      <a href="history.html">Lịch sử</a>
+      <a id="nav-auth" class="btn-small" href="login.html">Đăng nhập</a>
+    </div>
+  </nav>
+</header>
+
+<section class="scan-wrapper" style="padding-top:40px;">
+  <h1 class="section-title">Nâng cấp Premium</h1>
+  
+  <!-- Current Status -->
+  <div id="current-status" class="card" style="max-width:800px;margin:0 auto 40px;">
+    <div class="loading"><div class="spinner"></div><span>Đang tải...</span></div>
+  </div>
+  
+  <!-- Pricing Cards -->
+  <div class="pricing-grid">
+    <!-- Free Plan -->
+    <div class="pricing-card" data-plan="free">
+      <div class="pricing-header free">
+        <h3>Miễn phí</h3>
+        <div class="pricing-price">0đ</div>
+      </div>
+      <div class="pricing-body">
+        <ul class="pricing-features">
+          <li>✅ Quét mã QR: <strong>5 lần</strong></li>
+          <li>❌ Tạo mã QR</li>
+          <li>❌ Xem lịch sử</li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- 1 Month -->
+    <div class="pricing-card" data-plan="1_month">
+      <div class="pricing-header monthly">
+        <h3>Gói 1 tháng</h3>
+        <div class="pricing-price">30,000đ</div>
+      </div>
+      <div class="pricing-body">
+        <ul class="pricing-features">
+          <li>✅ Quét mã QR: <strong>Không giới hạn</strong></li>
+          <li>✅ Tạo mã QR: <strong>Không giới hạn</strong></li>
+          <li>✅ Xem lịch sử đầy đủ</li>
+          <li>✅ Hỗ trợ ưu tiên</li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- 3 Months -->
+    <div class="pricing-card featured" data-plan="3_months">
+      <div class="pricing-badge">Phổ biến</div>
+      <div class="pricing-header monthly">
+        <h3>Gói 3 tháng</h3>
+        <div class="pricing-price">80,000đ</div>
+        <div class="pricing-save">Tiết kiệm 10,000đ</div>
+      </div>
+      <div class="pricing-body">
+        <ul class="pricing-features">
+          <li>✅ Quét mã QR: <strong>Không giới hạn</strong></li>
+          <li>✅ Tạo mã QR: <strong>Không giới hạn</strong></li>
+          <li>✅ Xem lịch sử đầy đủ</li>
+          <li>✅ Hỗ trợ ưu tiên</li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- 6 Months -->
+    <div class="pricing-card" data-plan="6_months">
+      <div class="pricing-header yearly">
+        <h3>Gói 6 tháng</h3>
+        <div class="pricing-price">150,000đ</div>
+        <div class="pricing-save">Tiết kiệm 30,000đ</div>
+      </div>
+      <div class="pricing-body">
+        <ul class="pricing-features">
+          <li>✅ Quét mã QR: <strong>Không giới hạn</strong></li>
+          <li>✅ Tạo mã QR: <strong>Không giới hạn</strong></li>
+          <li>✅ Xem lịch sử đầy đủ</li>
+          <li>✅ Hỗ trợ ưu tiên</li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- 1 Year -->
+    <div class="pricing-card" data-plan="1_year">
+      <div class="pricing-badge best">Tiết kiệm nhất</div>
+      <div class="pricing-header yearly">
+        <h3>Gói 1 năm</h3>
+        <div class="pricing-price">280,000đ</div>
+        <div class="pricing-save">Tiết kiệm 80,000đ</div>
+      </div>
+      <div class="pricing-body">
+        <ul class="pricing-features">
+          <li>✅ Quét mã QR: <strong>Không giới hạn</strong></li>
+          <li>✅ Tạo mã QR: <strong>Không giới hạn</strong></li>
+          <li>✅ Xem lịch sử đầy đủ</li>
+          <li>✅ Hỗ trợ ưu tiên</li>
+          <li>🎁 <strong>Tặng 2 tháng miễn phí</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Contact Section -->
+  <div class="card contact-card" style="max-width:800px;margin:40px auto 0;">
+    <h2 style="text-align:center; margin-bottom: 20px;">📞 Liên hệ mua gói</h2>
+    
+    <div class="contact-info">
+      <div class="contact-item">
+        <div class="contact-icon">📱</div>
+        <div class="contact-details">
+          <h4>Số điện thoại / Zalo</h4>
+          <a href="tel:0829046031" class="contact-link">0829 046 031</a>
+        </div>
+      </div>
+      
+      <div class="contact-item">
+        <div class="contact-icon">👤</div>
+        <div class="contact-details">
+          <h4>Liên hệ</h4>
+          <p><strong>Huỳnh Bảo</strong></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="purchase-steps">
+      <h4>📋 Hướng dẫn mua gói:</h4>
+      <ol>
+        <li><strong>Bước 1:</strong> Chọn gói phù hợp với nhu cầu</li>
+        <li><strong>Bước 2:</strong> Liên hệ qua số điện thoại/Zalo: <strong>0829 046 031</strong></li>
+        <li><strong>Bước 3:</strong> Cung cấp <strong>tên tài khoản</strong> và <strong>gói muốn mua</strong></li>
+        <li><strong>Bước 4:</strong> Chuyển khoản theo hướng dẫn</li>
+        <li><strong>Bước 5:</strong> Gói sẽ được kích hoạt trong vòng <strong>15 phút</strong> sau khi xác nhận thanh toán</li>
+      </ol>
+    </div>
+    
+    <div class="payment-note">
+      <p>💡 <strong>Lưu ý:</strong> Vui lòng cung cấp đúng tên tài khoản đã đăng ký trên QR Checker để được kích hoạt chính xác.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div>
+      <h4>QR Checker</h4>
+      <p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p>
+    </div>
+    <div>
+      <h5>Chức năng</h5>
+      <ul>
+        <li><a href="index.html#scan">Quét mã QR</a></li>
+        <li><a href="create.html">Tạo mã</a></li>
+        <li><a href="history.html">Lịch sử</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5>Hỗ trợ</h5>
+      <ul>
+        <li><a href="guide.html">Hướng dẫn</a></li>
+        <li><a href="about.html">Giới thiệu</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="copy small">© 2025 QR Checker</div>
+</footer>
+
+<script>
+// Auth check
+(async function(){
+  const a = document.getElementById('nav-auth');
+  const r = await fetch('/me', {credentials:'include'}).catch(()=>null);
+  const authed = !!r && r.status === 200;
+
+  if(a){
+    if(authed){ a.textContent='Tài khoản'; a.href='account.html'; }
+    else{ a.textContent='Đăng nhập'; a.href='login.html?next=pricing.html'; }
+  }
+  
+  if(authed){
+    loadStatus();
+  } else {
+    document.getElementById('current-status').innerHTML = `
+      <p style="text-align:center;">Vui lòng <a href="login.html?next=pricing.html">đăng nhập</a> để xem trạng thái tài khoản.</p>
+    `;
+  }
+})();
+
+// Map plan_id to data-plan attribute
+function getPlanDataAttr(planId) {
+  const mapping = {
+    '1_month': '1_month',
+    '3_months': '3_months', 
+    '6_months': '6_months',
+    '1_year': '1_year'
+  };
+  return mapping[planId] || null;
+}
+
+function highlightCurrentPlan(planId) {
+  // Remove current-plan class from all cards
+  document.querySelectorAll('.pricing-card').forEach(card => {
+    card.classList.remove('current-plan');
+    // Remove existing current-plan-badge if any
+    const existingBadge = card.querySelector('.current-plan-badge');
+    if (existingBadge) existingBadge.remove();
+  });
+  
+  // If no subscription (free user), highlight free plan
+  if (!planId) {
+    const freeCard = document.querySelector('.pricing-card[data-plan="free"]');
+    if (freeCard) {
+      freeCard.classList.add('current-plan');
+      const badge = document.createElement('div');
+      badge.className = 'current-plan-badge';
+      badge.textContent = '✓ Gói hiện tại của bạn';
+      freeCard.appendChild(badge);
+    }
+    return;
+  }
+  
+  // Find and highlight the current plan card
+  const planAttr = getPlanDataAttr(planId);
+  if (planAttr) {
+    const card = document.querySelector(`.pricing-card[data-plan="${planAttr}"]`);
+    if (card) {
+      card.classList.add('current-plan');
+      const badge = document.createElement('div');
+      badge.className = 'current-plan-badge';
+      badge.textContent = '✓ Gói hiện tại của bạn';
+      card.appendChild(badge);
+    }
+  }
+}
+
+async function loadStatus() {
+  const statusDiv = document.getElementById('current-status');
+  
+  try {
+    const response = await fetch('/subscription/info', { credentials: 'include' });
+    const data = await response.json();
+    
+    if (data.status === 'ok') {
+      if (data.is_admin) {
+        statusDiv.innerHTML = `
+          <div style="text-align:center;">
+            <h3>👑 Tài khoản Quản trị viên</h3>
+            <p>Bạn có quyền truy cập đầy đủ tất cả tính năng.</p>
+          </div>
+        `;
+      } else if (data.has_subscription) {
+        const endDate = new Date(data.end_date).toLocaleDateString('vi-VN');
+        
+        statusDiv.innerHTML = `
+          <div style="text-align:center;">
+            <h3>✅ Tài khoản Premium - ${data.plan_name}</h3>
+            <p><strong>Hết hạn:</strong> ${endDate}</p>
+            <p class="small" style="margin-top:8px; color: #28a745;">Bạn đang sử dụng đầy đủ tính năng Premium.</p>
+            <p class="small" style="margin-top:12px; color: #666;">💡 Bạn có thể gia hạn hoặc nâng cấp gói bằng cách liên hệ bên dưới.</p>
+          </div>
+        `;
+        
+        // Highlight current plan
+        highlightCurrentPlan(data.plan_id);
+      } else {
+        statusDiv.innerHTML = `
+          <div style="text-align:center;">
+            <h3>📱 Tài khoản Miễn phí</h3>
+            <p><strong>Lượt quét còn lại:</strong> ${data.free_scans_remaining}/${data.free_scan_limit}</p>
+            <p class="small" style="margin-top:8px; color: #ff6600;">⬇️ Chọn gói bên dưới và liên hệ để nâng cấp!</p>
+          </div>
+        `;
+        
+        // Highlight free plan
+        highlightCurrentPlan(null);
+      }
+    }
+  } catch (error) {
+    statusDiv.innerHTML = '<p class="error-message">❌ Không thể tải thông tin</p>';
+  }
+}
+</script>
+</body>
+</html>

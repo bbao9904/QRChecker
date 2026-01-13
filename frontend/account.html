@@ -36,37 +36,42 @@
     <a class="btn btn--ghost" href="register.html" style="margin-left:8px;">Đăng ký</a>
   </div>
 
-  <div id="authed" class="card" style="max-width:600px;margin:0 auto;display:none;">
+  <div id="authed" class="card" style="max-width:700px;margin:0 auto;display:none;">
     <h2>Thông tin tài khoản</h2>
     <div id="user-info">Đang tải...</div>
+    
+    <!-- Subscription Section -->
+    <div id="subscription-section" style="margin-top: 24px; padding-top: 24px; border-top: 2px solid #f0f0f0;">
+      <h3>📦 Gói dịch vụ</h3>
+      <div id="subscription-info">Đang tải...</div>
+    </div>
   </div>
 </section>
 
- <!-- FOOTER -->
-    <footer class="site-footer">
-        <div class="footer-grid">
-            <div>
-                <h4>QR Checker</h4>
-                <p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p>
-            </div>
-            <div>
-                <h5>Chức năng</h5>
-                <ul>
-                    <li><a href="#scan">Quét mã QR</a></li>
-                    <li><a href="create.html">Tạo mã</a></li>
-                    <li><a href="history.html">Lịch sử</a></li>
-                </ul>
-            </div>
-            <div>
-                <h5>Hỗ trợ</h5>
-                <ul>
-                    <li><a href="guide.html">Hướng dẫn</a></li>
-                    <li><a href="about.html">Giới thiệu</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="copy small">© 2025 QR Checker</div>
-    </footer>
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div>
+      <h4>QR Checker</h4>
+      <p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p>
+    </div>
+    <div>
+      <h5>Chức năng</h5>
+      <ul>
+        <li><a href="#scan">Quét mã QR</a></li>
+        <li><a href="create.html">Tạo mã</a></li>
+        <li><a href="history.html">Lịch sử</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5>Hỗ trợ</h5>
+      <ul>
+        <li><a href="guide.html">Hướng dẫn</a></li>
+        <li><a href="about.html">Giới thiệu</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="copy small">© 2025 QR Checker</div>
+</footer>
 
 <script>
 (async ()=>{
@@ -77,17 +82,82 @@
   document.getElementById('btnLogin')?.addEventListener('click', ()=>{
     location.href = 'login.html?next=' + encodeURIComponent('account.html');
   });
+  
   if(isAuthed){
     const me = await r.json();
     document.getElementById('user-info').innerHTML = `
       <div class="kv"><span>Tài khoản</span><code>${me.username}</code></div>
-      <div class="kv"><span>Quyền</span><code>${me.is_admin? 'Admin':'User'}</code></div>
-      <div style="margin-top:10px;">
+      <div class="kv"><span>Quyền</span><code>${me.is_admin? '👑 Admin':'User'}</code></div>
+      <div style="margin-top:16px; display: flex; gap: 8px; flex-wrap: wrap;">
         <button class="btn btn--outline" onclick="logout()">Đăng xuất</button>
-        ${me.is_admin ? '<a class="btn btn--accent" style="margin-left:8px" href="admin.html">Trang quản trị</a>' : ''}
-      </div>`;
+        ${me.is_admin ? '<a class="btn btn--accent" href="admin.html">Trang quản trị</a>' : ''}
+      </div>
+    `;
+    
+    // Load subscription info
+    await loadSubscriptionInfo(me.is_admin);
   }
 })();
+
+async function loadSubscriptionInfo(isAdmin) {
+  const subDiv = document.getElementById('subscription-info');
+  
+  if (isAdmin) {
+    subDiv.innerHTML = `
+      <div class="sub-status admin">
+        <div class="sub-icon">👑</div>
+        <div class="sub-details">
+          <h4>Quản trị viên</h4>
+          <p>Bạn có quyền truy cập đầy đủ tất cả tính năng.</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  
+  try {
+    const response = await fetch('/subscription/info', { credentials: 'include' });
+    const data = await response.json();
+    
+    if (data.status === 'ok') {
+      if (data.has_subscription) {
+        const endDate = new Date(data.end_date).toLocaleDateString('vi-VN');
+        subDiv.innerHTML = `
+          <div class="sub-status premium">
+            <div class="sub-icon">⭐</div>
+            <div class="sub-details">
+              <h4>Premium - ${data.plan_name}</h4>
+              <p>Hết hạn: <strong>${endDate}</strong></p>
+              <p class="small" style="color: #fff;">✅ Không giới hạn quét & tạo mã QR</p>
+            </div>
+          </div>
+          
+          <div style="margin-top: 20px;">
+            <a href="pricing.html" class="btn btn--outline">🔄 Gia hạn / Nâng cấp gói</a>
+          </div>
+        `;
+      } else {
+        subDiv.innerHTML = `
+          <div class="sub-status free">
+            <div class="sub-icon">📱</div>
+            <div class="sub-details">
+              <h4>Gói Miễn phí</h4>
+              <p>Lượt quét còn lại: <strong>${data.free_scans_remaining}/${data.free_scan_limit}</strong></p>
+              <p class="small" style="color: #666;">Nâng cấp Premium để sử dụng không giới hạn!</p>
+            </div>
+          </div>
+          
+          <div style="margin-top: 20px;">
+            <a href="pricing.html" class="btn btn--primary">🚀 Nâng cấp Premium</a>
+          </div>
+        `;
+      }
+    }
+  } catch (error) {
+    subDiv.innerHTML = '<p class="error-message">❌ Không thể tải thông tin</p>';
+  }
+}
+
 async function logout(){ await fetch('/logout'); location.href='login.html'; }
 
 // Navbar auth label/link

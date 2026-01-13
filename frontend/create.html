@@ -28,6 +28,18 @@
   </nav>
 </header>
 
+<section id="premium-guard" class="scan-wrapper" style="padding-top:40px; display:none;">
+  <div class="card" style="max-width:720px;margin:0 auto;text-align:center;">
+    <h2>⭐ Chức năng Premium</h2>
+    <p class="small">Tính năng Tạo mã QR chỉ dành cho tài khoản Premium.</p>
+    <p style="margin: 16px 0;">Nâng cấp ngay để sử dụng không giới hạn!</p>
+    <div class="hero__actions" style="margin-top:12px; display:flex; justify-content:center; gap: 12px;">
+      <a href="pricing.html" class="btn btn--primary">🚀 Xem các gói Premium</a>
+      <a href="account.html" class="btn btn--outline">Tài khoản</a>
+    </div>
+  </div>
+</section>
+
 <section id="auth-guard" class="scan-wrapper" style="padding-top:40px; display:none;">
   <div class="card" style="max-width:720px;margin:0 auto;text-align:center;">
     <h2>Bạn cần đăng nhập</h2>
@@ -181,12 +193,14 @@
 </footer>
 
 <script>
-// Auth guard
+// Auth guard - CẬP NHẬT
 (async function(){
   const next = location.pathname + location.search + location.hash;
   const a = document.getElementById('nav-auth');
-  const guard = document.getElementById('auth-guard');
+  const authGuard = document.getElementById('auth-guard');
+  const premiumGuard = document.getElementById('premium-guard');
   const content = document.getElementById('feature-content');
+  
   const r = await fetch('/me', {credentials:'include'}).catch(()=>null);
   const authed = !!r && r.status === 200;
 
@@ -194,14 +208,28 @@
     if(authed){ a.textContent='Tài khoản'; a.href='account.html'; }
     else{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
   }
-  if(authed){
-    if(content) content.style.display='block';
-    if(guard) guard.style.display='none';
-  }else{
+  
+  if(!authed){
     if(content) content.style.display='none';
-    if(guard) guard.style.display='block';
+    if(premiumGuard) premiumGuard.style.display='none';
+    if(authGuard) authGuard.style.display='block';
     const btn = document.getElementById('guard-login');
     if(btn) btn.href = 'login.html?next=' + encodeURIComponent(next);
+    return;
+  }
+  
+  // Kiểm tra subscription
+  const subRes = await fetch('/subscription/info', {credentials:'include'}).catch(()=>null);
+  const subData = subRes && subRes.status === 200 ? await subRes.json() : null;
+  
+  if(subData && (subData.is_admin || subData.has_subscription)){
+    if(content) content.style.display='block';
+    if(authGuard) authGuard.style.display='none';
+    if(premiumGuard) premiumGuard.style.display='none';
+  } else {
+    if(content) content.style.display='none';
+    if(authGuard) authGuard.style.display='none';
+    if(premiumGuard) premiumGuard.style.display='block';
   }
 })();
 
