@@ -1,0 +1,271 @@
+/**
+ * QR Checker Extension Styles
+ */
+
+/* Waiting Indicator */
+.qrc-waiting-indicator {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  animation: qrc-fadeIn 0.2s ease;
+}
+
+.qrc-waiting-ring {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: qrc-spin 1s linear infinite;
+}
+
+@keyframes qrc-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes qrc-fadeIn {
+  from { opacity: 0; transform: translate(-50%, -100%) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+}
+
+/* Tooltip */
+.qrc-tooltip {
+  position: absolute;
+  min-width: 200px;
+  max-width: 320px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  animation: qrc-fadeIn 0.25s ease;
+  z-index: 2147483647 !important;
+}
+
+/* Levels */
+.qrc-tooltip.qrc-safe,
+.qrc-tooltip.qrc-info {
+  background: linear-gradient(135deg, #d4edda, #c3e6cb);
+  border: 2px solid #28a745;
+  color: #155724;
+}
+
+.qrc-tooltip.qrc-warning,
+.qrc-tooltip.qrc-login_required {
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+  border: 2px solid #ffc107;
+  color: #856404;
+}
+
+.qrc-tooltip.qrc-danger {
+  background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+  border: 2px solid #dc3545;
+  color: #721c24;
+}
+
+.qrc-tooltip.qrc-loading,
+.qrc-tooltip.qrc-none,
+.qrc-tooltip.qrc-unknown {
+  background: linear-gradient(135deg, #e2e3e5, #d6d8db);
+  border: 2px solid #6c757d;
+  color: #383d41;
+}
+
+.qrc-tooltip.qrc-error {
+  background: linear-gradient(135deg, #fff3cd, #ffe0b2);
+  border: 2px solid #ff9800;
+  color: #7a4f01;
+}
+
+/* Header */
+.qrc-tooltip-header {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+/* URL */
+.qrc-tooltip-url {
+  font-size: 11px;
+  opacity: 0.8;
+  word-break: break-all;
+  padding: 6px 8px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 6px;
+  margin: 6px 0;
+}
+
+/* URL clickable - An toàn */
+.qrc-tooltip-url.qrc-url-link {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(40, 167, 69, 0.15);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  border-radius: 6px;
+  color: #155724;
+  text-decoration: none;
+  font-size: 12px;
+  word-break: break-all;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.qrc-url-link:hover {
+  background: rgba(40, 167, 69, 0.3) !important;
+  border-color: #28a745 !important;
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+/* URL cảnh báo */
+.qrc-tooltip-url.qrc-url-warn {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  border-radius: 6px;
+  color: #856404;
+  text-decoration: none;
+  font-size: 12px;
+  word-break: break-all;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.qrc-url-warn:hover {
+  background: rgba(255, 193, 7, 0.3) !important;
+  border-color: #ffc107 !important;
+}
+
+/* URL nguy hiểm - không cho click */
+.qrc-tooltip-url.qrc-url-danger {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(220, 53, 69, 0.15);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: 6px;
+  color: #721c24;
+  font-size: 12px;
+  word-break: break-all;
+  cursor: not-allowed;
+  text-decoration: line-through;
+  opacity: 0.8;
+}
+
+/* Stats */
+.qrc-tooltip-stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.qrc-stat {
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.qrc-stat.safe {
+  background: #28a745;
+  color: white;
+}
+
+.qrc-stat.warn {
+  background: #ffc107;
+  color: #333;
+}
+
+.qrc-stat.danger {
+  background: #dc3545;
+  color: white;
+}
+
+/* Detail */
+.qrc-tooltip-detail {
+  margin-top: 8px;
+  font-size: 12px;
+  padding: 8px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 6px;
+}
+
+/* Login prompt */
+.qrc-tooltip-login {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 6px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* Close button */
+.qrc-tooltip-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: rgba(0,0,0,0.15);
+  color: inherit;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qrc-tooltip-close:hover {
+  background: rgba(0,0,0,0.25);
+}
+
+/* Arrow */
+.qrc-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px 8px 0 8px;
+  border-style: solid;
+  border-color: inherit;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+
+/* Nguồn kiểm tra */
+.qrc-tooltip-source {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+/* Gợi ý đăng nhập */
+.qrc-tooltip-extra {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(0,0,0,0.1);
+  border-radius: 6px;
+  font-size: 11px;
+  text-align: center;
+  color: #1e40af;
+  font-weight: 500;
+}

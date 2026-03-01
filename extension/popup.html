@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Checker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 320px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #ff9500 0%, #ff6b00 100%);
+      color: white;
+    }
+    .header { padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.2); }
+    .header h1 { font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .header p { font-size: 12px; opacity: 0.85; margin-top: 6px; }
+
+    /* Login */
+    .login-section { padding: 16px 20px; display: none; }
+    .login-section.active { display: block; }
+    .login-section h2 { font-size: 15px; margin-bottom: 12px; text-align: center; }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 12px; margin-bottom: 3px; opacity: 0.9; }
+    .form-group input { width: 100%; padding: 9px 12px; border: none; border-radius: 8px; font-size: 13px; background: rgba(255,255,255,0.95); color: #333; }
+    .form-group input:focus { outline: 2px solid rgba(255,255,255,0.5); }
+    .login-btn { width: 100%; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: rgba(255,255,255,0.2); color: white; transition: background 0.2s; margin-top: 6px; }
+    .login-btn:hover { background: rgba(255,255,255,0.3); }
+    .login-error { background: #ef4444; padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 10px; display: none; }
+    .login-error.show { display: block; }
+    .register-link { text-align: center; margin-top: 12px; font-size: 12px; }
+    .register-link a { color: white; text-decoration: underline; }
+
+    /* User */
+    .user-section { padding: 12px 20px; background: rgba(0,0,0,0.1); border-bottom: 1px solid rgba(255,255,255,0.15); display: none; }
+    .user-section.active { display: flex; align-items: center; justify-content: space-between; }
+    .user-info { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .user-name { font-weight: 600; font-size: 13px; }
+    .user-status { font-size: 11px; opacity: 0.8; }
+    .logout-btn { padding: 5px 10px; background: rgba(255,255,255,0.15); border: none; border-radius: 6px; color: white; font-size: 11px; cursor: pointer; }
+    .logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+    /* Content */
+    .content { padding: 16px 20px; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.15); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-size: 14px; }
+    .toggle-desc { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+    .switch { position: relative; width: 46px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); border-radius: 24px; transition: 0.3s; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+    input:checked + .slider { background: #4ade80; }
+    input:checked + .slider:before { transform: translateX(22px); }
+    .range-row { padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.15); }
+    .range-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .range-value { font-weight: 600; background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+    input[type="range"] { width: 100%; height: 6px; -webkit-appearance: none; background: rgba(255,255,255,0.3); border-radius: 3px; outline: none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: white; border-radius: 50%; cursor: pointer; }
+
+    /* Mode indicator */
+    .mode-indicator { padding: 10px 20px; background: rgba(0,0,0,0.1); text-align: center; font-size: 12px; }
+    .mode-indicator.online { color: #4ade80; }
+    .mode-indicator.offline { color: #fbbf24; }
+
+    .footer { padding: 14px 20px; background: rgba(0,0,0,0.15); display: flex; gap: 10px; }
+    .footer a { flex: 1; padding: 10px; text-align: center; background: rgba(255,255,255,0.15); color: white; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 500; transition: background 0.2s; }
+    .footer a:hover { background: rgba(255,255,255,0.25); }
+    .status { text-align: center; padding: 8px; font-size: 12px; background: rgba(0,0,0,0.1); }
+    .status.saved { background: #4ade80; color: #052e16; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔍 QR Checker</h1>
+    <p>Tự động kiểm tra an toàn mã QR</p>
+  </div>
+
+  <!-- Login Section -->
+  <div class="login-section" id="loginSection">
+    <h2>🔐 Đăng nhập để quét sâu</h2>
+    <div class="login-error" id="loginError"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Tên đăng nhập</label>
+        <input type="text" id="username" placeholder="Nhập tên đăng nhập" required>
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu</label>
+        <input type="password" id="password" placeholder="Nhập mật khẩu" required>
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">Đăng nhập</button>
+    </form>
+    <div class="register-link">
+      Chưa có tài khoản? <a href="https://smartqrchecker.pythonanywhere.com/register.html" target="_blank">Đăng ký</a>
+    </div>
+  </div>
+
+  <!-- User Section -->
+  <div class="user-section" id="userSection">
+    <div class="user-info">
+      <div class="user-avatar">👤</div>
+      <div>
+        <div class="user-name" id="userName"></div>
+        <div class="user-status">🛡️ Quét VirusTotal</div>
+      </div>
+    </div>
+    <button class="logout-btn" id="logoutBtn">Đăng xuất</button>
+  </div>
+
+  <!-- Mode -->
+  <div class="mode-indicator" id="modeIndicator"></div>
+
+  <div class="content">
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Bật Extension</div>
+        <div class="toggle-desc">Quét mã QR khi hover</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="enabled" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="range-row">
+      <div class="range-header">
+        <span>Thời gian hover</span>
+        <span class="range-value" id="delayValue">2s</span>
+      </div>
+      <input type="range" id="hoverDelay" min="1000" max="5000" step="500" value="2000">
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Hiện tooltip</div>
+        <div class="toggle-desc">Hiện kết quả trên trang</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="showTooltip" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="https://smartqrchecker.pythonanywhere.com/" target="_blank">🌐 Mở Web</a>
+    <a href="https://smartqrchecker.pythonanywhere.com/guide.html" target="_blank">📖 Hướng dẫn</a>
+  </div>
+
+  <div class="status" id="status">Sẵn sàng</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

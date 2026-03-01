@@ -12,6 +12,7 @@ from PIL import Image
 from pyzbar.pyzbar import decode
 import qrcode
 from io import BytesIO
+from flask_cors import CORS
 
 # Import subscription modules
 from subscription import init_subscription_tables, check_scan_permission, check_feature_permission
@@ -25,6 +26,9 @@ app = Flask(
     static_folder='../frontend',
     static_url_path=''  # cho phép /style.css
 )
+
+CORS(app, supports_credentials=True)
+
 app.secret_key = os.getenv("APP_SECRET", "dev_change_me")
 app.permanent_session_lifetime = timedelta(days=7)
 
@@ -1214,11 +1218,42 @@ def clear_create_history():
     
     return jsonify({"status": "ok", "msg": "Đã xóa toàn bộ lịch sử tạo mã"})
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, ssl_context='adhoc')
+# ==== EXTENSION API (không cần đăng nhập) ====
+@app.route('/api/extension/scan', methods=['POST'])
+def extension_scan():
+    """API cho extension - không cần đăng nhập, chỉ check URL"""
+    data = request.get_json(force=True)
+    raw = (data.get('qr_data') or '').strip()
+    
+    if not raw:
+        return jsonify({"error": "Thiếu dữ liệu QR"}), 400
+    
+    # Chỉ xử lý URL
+    if not looks_like_url(raw):
+        return jsonify({
+            "result": "not_url",
+            "message": "Không phải URL - không cần kiểm tra"
+        })
+    
+    # Kiểm tra URL
+    is_safe, message, details = check_url_safety(raw)
+    
+    return jsonify({
+        "url": raw,
+        "is_safe": is_safe,
+        "result": message,
+        "details": details
+    })
+
+#if __name__ == "__main__":
+ #   app.run(host="0.0.0.0", port=5000, ssl_context='adhoc')
 
     # ...existing code...
+# ...existing code...
 
+if __name__ == "__main__":
+    # BỎ ssl_context='adhoc' để chạy HTTP
+    app.run(host="0.0.0.0", port=5000, debug=True)
 #if __name__ == "__main__":
     # Cấu hình ngrok authtoken
  

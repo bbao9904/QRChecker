@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chính sách bảo mật - QR Checker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Quicksand:400,600,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .alert-box {
+      padding: 18px 20px;
+      border-radius: 14px;
+      margin: 16px 0;
+    }
+    .alert-box h3 {
+      margin: 0 0 10px;
+      font-size: .95rem;
+    }
+    .alert-box ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+      line-height: 1.6;
+      font-size: .85rem;
+    }
+    .alert-box.danger {
+      background: #fef2f2;
+      border: 2px solid #fca5a5;
+    }
+    .alert-box.danger h3 { color: #dc2626; }
+    .alert-box.danger li { color: #7f1d1d; }
+    .alert-box.warning {
+      background: #fffbeb;
+      border: 2px solid #fcd34d;
+    }
+    .alert-box.warning h3 { color: #d97706; }
+    .alert-box.warning li, .alert-box.warning p { color: #78350f; }
+    .alert-box.info {
+      background: #eff6ff;
+      border: 2px solid #93c5fd;
+    }
+    .alert-box.info h3 { color: #2563eb; }
+    .alert-box.info li { color: #1e3a8a; }
+    .about-txt {
+      font-size: .9rem;
+      line-height: 1.6;
+      color: #444;
+    }
+    .quick-section ul {
+      margin: 6px 0 0;
+      padding-left: 20px;
+      line-height: 1.6;
+      font-size: .85rem;
+    }
+    .contact-box {
+      text-align: center;
+      padding: 20px;
+      background: #fff7ed;
+      border-radius: 14px;
+      margin-top: 16px;
+    }
+    .contact-box a {
+      color: var(--orange-dark);
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .last-update {
+      text-align: center;
+      font-size: .7rem;
+      color: #888;
+      margin-top: 20px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+<header class="site-header">
+  <nav class="nav">
+    <div class="nav__brand">
+      <a href="index.html" class="nav__logo">
+        <img src="assets/qr-checker-logo.png" alt="QR Checker" class="nav__logo-img">
+      </a>
+      <span class="nav__title">QR Checker</span>
+    </div>
+    <input type="checkbox" id="nav-toggle">
+    <label for="nav-toggle" class="nav__toggle"><span></span></label>
+    <div class="nav__links">
+      <a href="about.html">Giới thiệu</a>
+      <a href="guide.html">Hướng dẫn</a>
+      <a href="create.html">Tạo mã QR</a>
+      <a href="history.html">Lịch sử</a>
+      <a id="nav-auth" class="btn-small" href="login.html">Đăng nhập</a>
+    </div>
+  </nav>
+</header>
+
+<section class="scan-wrapper" style="padding-top:40px;">
+  <h1 class="section-title">Chính sách bảo mật</h1>
+
+  <div class="quick-section">
+    <h2><span class="badge">1</span>Giới thiệu</h2>
+    <p class="about-txt">
+      QR Checker cam kết bảo vệ quyền riêng tư và bảo mật thông tin của người dùng. 
+      Chính sách này giải thích cách chúng tôi thu thập, sử dụng và bảo vệ dữ liệu của bạn 
+      khi sử dụng dịch vụ quét và tạo mã QR.
+    </p>
+  </div>
+
+  <div class="quick-section">
+    <h2><span class="badge">2</span>Thông tin chúng tôi thu thập</h2>
+    <ul>
+      <li><strong>Thông tin tài khoản:</strong> Tên đăng nhập, email (nếu có) khi bạn đăng ký.</li>
+      <li><strong>Lịch sử quét:</strong> Các mã QR bạn đã quét (chỉ lưu khi đăng nhập).</li>
+      <li><strong>Mã QR đã tạo:</strong> Nội dung các mã QR bạn tạo thông qua dịch vụ.</li>
+      <li><strong>Thông tin kỹ thuật:</strong> Địa chỉ IP, loại trình duyệt, thời gian truy cập.</li>
+    </ul>
+  </div>
+
+  <div class="quick-section">
+    <h2><span class="badge">3</span>Bảo mật dữ liệu</h2>
+    <ul>
+      <li>Mật khẩu được mã hóa bằng thuật toán bcrypt.</li>
+      <li>Kết nối được bảo vệ bằng HTTPS.</li>
+      <li>Dữ liệu được lưu trữ an toàn trên máy chủ bảo mật.</li>
+      <li>Chúng tôi không chia sẻ thông tin cá nhân với bên thứ ba.</li>
+    </ul>
+  </div>
+
+  <div class="quick-section">
+    <h2><span class="badge">⚠️</span>Miễn trừ trách nhiệm</h2>
+    
+    <div class="alert-box danger">
+      <h3>🏦 Mã QR Ngân hàng / VietQR</h3>
+      <ul>
+        <li>Mã QR ngân hàng (VietQR, mã chuyển khoản) <strong>KHÔNG THỂ</strong> được quét để phát hiện mã độc.</li>
+        <li>Các mã QR thanh toán chứa thông tin tài khoản ngân hàng, không chứa URL nên không thể kiểm tra qua các dịch vụ bảo mật.</li>
+        <li>QR Checker <strong>KHÔNG CHỊU TRÁCH NHIỆM</strong> về các giao dịch tài chính phát sinh từ việc quét mã QR ngân hàng.</li>
+        <li>Luôn <strong>XÁC MINH THÔNG TIN NGƯỜI NHẬN</strong> trước khi thực hiện chuyển khoản.</li>
+        <li>Chỉ quét mã QR ngân hàng từ <strong>NGUỒN TIN CẬY</strong> (cửa hàng chính thức, người quen).</li>
+      </ul>
+    </div>
+
+    <div class="alert-box warning">
+      <h3>⚡ Giới hạn khả năng phát hiện</h3>
+      <p style="margin:0 0 8px;font-size:.85rem;">QR Checker sử dụng các dịch vụ bên thứ ba (VirusTotal, Google Safe Browsing) để kiểm tra URL. Tuy nhiên:</p>
+      <ul>
+        <li>Không có hệ thống nào đảm bảo phát hiện 100% các mối đe dọa.</li>
+        <li>Các trang web lừa đảo mới có thể chưa được cập nhật vào cơ sở dữ liệu.</li>
+        <li>Kết quả "An toàn" không đảm bảo tuyệt đối, người dùng cần tự cảnh giác.</li>
+        <li>Chúng tôi không chịu trách nhiệm về thiệt hại phát sinh từ việc truy cập các URL.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="quick-section">
+    <h2><span class="badge">4</span>Các loại mã QR không hỗ trợ kiểm tra</h2>
+    <ul>
+      <li><strong>Mã QR ngân hàng / VietQR:</strong> Chứa thông tin chuyển khoản, không phải URL.</li>
+      <li><strong>Mã QR WiFi:</strong> Chứa thông tin kết nối WiFi.</li>
+      <li><strong>Mã QR vCard:</strong> Chứa thông tin liên hệ.</li>
+      <li><strong>Mã QR văn bản thuần:</strong> Chỉ chứa text, không có URL để kiểm tra.</li>
+      <li><strong>Mã QR Phone/SMS/Email:</strong> Chứa số điện thoại hoặc nội dung tin nhắn.</li>
+    </ul>
+  </div>
+
+  <div class="quick-section">
+    <h2><span class="badge">💡</span>Khuyến nghị an toàn</h2>
+    <div class="alert-box info">
+      <h3>Khi quét mã QR ngân hàng hoặc thanh toán</h3>
+      <ul>
+        <li>Xác nhận nguồn gốc mã QR (từ đâu, ai cung cấp).</li>
+        <li>Kiểm tra kỹ thông tin người nhận trước khi chuyển.</li>
+        <li>Xác nhận số tiền trước khi thực hiện giao dịch.</li>
+        <li>Không chuyển tiền cho người lạ qua mã QR không rõ nguồn gốc.</li>
+        <li>Cảnh giác với mã QR dán đè, bị sửa đổi hoặc ở nơi công cộng.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="quick-section">
+    <h2><span class="badge">5</span>Quyền của người dùng</h2>
+    <ul>
+      <li>Truy cập và xem thông tin cá nhân của bạn.</li>
+      <li>Yêu cầu xóa tài khoản và dữ liệu liên quan.</li>
+      <li>Xóa lịch sử quét bất kỳ lúc nào.</li>
+      <li>Từ chối nhận thông báo (nếu có).</li>
+    </ul>
+  </div>
+
+  <div class="quick-section">
+    <h2><span class="badge">6</span>Liên hệ</h2>
+    <p class="about-txt">
+      Nếu bạn có câu hỏi về chính sách bảo mật này hoặc cần hỗ trợ, vui lòng liên hệ:
+    </p>
+    <div class="contact-box">
+      📧 <a href="mailto:HaoDSCE180062@fpt.edu.vn">HaoDSCE180062@fpt.edu.vn</a>
+    </div>
+    <p class="last-update">Cập nhật lần cuối: Tháng 3, 2026</p>
+  </div>
+
+  <div class="quick-section" style="text-align:center;">
+    <a href="index.html#scan" class="btn btn--accent">Quét ngay</a>
+    <a href="guide.html" class="btn btn--accent">Xem hướng dẫn</a>
+  </div>
+
+</section>
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div>
+      <h4>QR Checker</h4>
+      <p class="small">Nền tảng kiểm tra & tạo QR an toàn.</p>
+    </div>
+    <div>
+      <h5>Chức năng</h5>
+      <ul>
+        <li><a href="index.html#scan">Quét mã QR</a></li>
+        <li><a href="create.html">Tạo mã</a></li>
+        <li><a href="history.html">Lịch sử</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5>Hỗ trợ</h5>
+      <ul>
+        <li><a href="guide.html">Hướng dẫn</a></li>
+        <li><a href="about.html">Giới thiệu</a></li>
+        <li><a href="privacy.html">Chính sách bảo mật</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="copy small">© 2025 QR Checker</div>
+</footer>
+
+<script>
+(async function(){
+  const a = document.getElementById('nav-auth'); if(!a) return;
+  try{
+    const r = await fetch('/me');
+    if(r.status===200){ a.textContent='Tài khoản'; a.href='account.html'; }
+    else{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
+  }catch{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
+})();
