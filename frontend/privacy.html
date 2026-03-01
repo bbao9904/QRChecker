@@ -234,8 +234,26 @@
 (async function(){
   const a = document.getElementById('nav-auth'); if(!a) return;
   try{
-    const r = await fetch('/me');
-    if(r.status===200){ a.textContent='Tài khoản'; a.href='account.html'; }
-    else{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
-  }catch{ a.textContent='Đăng nhập'; a.href='login.html?next=' + encodeURIComponent(location.pathname); }
+    const r = await fetch('/me', { credentials: 'include' });
+    if(r.ok){
+      const data = await r.json();
+      if(data && data.username){
+        a.textContent = 'Tài khoản';
+        a.href = 'account.html';
+      } else {
+        a.textContent = 'Đăng nhập';
+        a.href = 'login.html?next=' + encodeURIComponent(location.pathname);
+      }
+    } else {
+      a.textContent = 'Đăng nhập';
+      a.href = 'login.html?next=' + encodeURIComponent(location.pathname);
+    }
+  }catch(e){
+    a.textContent = 'Đăng nhập';
+    a.href = 'login.html?next=' + encodeURIComponent(location.pathname);
+  }
 })();
+</script>
+
+</body>
+</html>
