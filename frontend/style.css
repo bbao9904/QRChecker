@@ -1285,3 +1285,272 @@ body{
   font-weight: 600;
 }
 
+/* ===== MACRO WARNING ===== */
+.macro-warning-block {
+  background: linear-gradient(135deg, #fff3cd, #ffeeba) !important;
+  border-left: 5px solid #e65100 !important;
+  border-radius: 10px !important;
+  padding: 16px !important;
+  margin-top: 12px;
+}
+
+.macro-warning-content {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #5d4037;
+}
+
+.macro-section-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  color: #bf360c;
+}
+
+.macro-warning-content ul {
+  margin: 4px 0 8px 18px;
+  padding: 0;
+}
+
+.macro-warning-content ul li {
+  margin: 3px 0;
+}
+
+.macro-warning-content p {
+  margin: 4px 0;
+}
+
+/* Engine table */
+.engine-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.engine-table th {
+  background: rgba(0,0,0,0.08);
+  padding: 6px 10px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.engine-table td {
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+.engine-table tr:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+/* Pill inline nhỏ cho table */
+.engine-table .pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+/* ===== FILE LINK HOVER CONFIRM ===== */
+.file-link-hover-wrap {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.file-link-caution {
+  display: block;
+  background: rgba(255, 152, 0, 0.08);
+  border: 1px dashed #ff9800;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: monospace;
+  font-size: 13px;
+  word-break: break-all;
+  color: #e65100;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.file-link-caution:hover {
+  background: rgba(255, 152, 0, 0.18);
+  border-color: #e65100;
+  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.25);
+}
+
+/* Tooltip hiện khi hover */
+.file-link-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(255, 152, 0, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.file-link-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 8px solid transparent;
+  border-top-color: #f57c00;
+}
+
+.file-link-tooltip small {
+  display: block;
+  font-weight: 400;
+  opacity: 0.85;
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+.file-link-hover-wrap:hover .file-link-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) scale(1);
+}
+
+/* ===== BLOCKED / WARNING (giữ nguyên) ===== */
+.file-link-blocked {
+  background: linear-gradient(135deg, #f8d7da, #f5c6cb) !important;
+  border-left: 5px solid #dc3545 !important;
+  border-radius: 10px !important;
+  padding: 16px !important;
+}
+
+.blocked-url {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px dashed #dc3545;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: monospace;
+  font-size: 13px;
+  word-break: break-all;
+  color: #721c24;
+  text-decoration: line-through;
+  margin: 8px 0;
+  cursor: not-allowed;
+}
+
+.blocked-msg {
+  color: #721c24;
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+.file-link-warning {
+  background: linear-gradient(135deg, #fff8e1, #fff3cd) !important;
+  border-left: 5px solid #ff9800 !important;
+  border-radius: 10px !important;
+  padding: 16px !important;
+}
+
+.warning-desc {
+  color: #6d4c00;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 4px 0 12px;
+}
+
+/* ===== VIETQR WARNING ===== */
+.vietqr-warning-block ul li {
+  margin: 3px 0;
+}
+
+/* ===== BANK QR WARNING ===== */
+.bank-warning-block {
+  background: linear-gradient(135deg, #fff8e1, #fff3cd) !important;
+  border-left: 5px solid #ff9800 !important;
+  border-radius: 10px !important;
+  padding: 16px !important;
+}
+
+.bank-warning-content {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.bank-warning-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.bank-warning-text p {
+  margin: 0 0 8px;
+  color: #e65100;
+  font-size: 14px;
+}
+
+.bank-warning-text ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #5d4037;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.bank-warning-text ul li {
+  margin: 3px 0;
+}
+
+/* History item - bank */
+.history-item.bank {
+  border-left: 4px solid #ff9800;
+  background: linear-gradient(135deg, #fff8e1, #fffde7);
+}
+
+.bank-info-block {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb) !important;
+  border-left: 5px solid #1976d2 !important;
+  border-radius: 10px !important;
+  padding: 16px !important;
+}
+
+.bank-info-block h4 {
+  color: #0d47a1;
+}
+
+.bank-info-grid .kv {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(25, 118, 210, 0.1);
+}
+
+.bank-info-grid .kv:last-child {
+  border-bottom: none;
+}
+
+.bank-info-grid .account-number {
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #1565c0;
+}
+
+.bank-info-grid .amount {
+  font-size: 16px;
+  color: #d32f2f;
+}
+.bank-info-grid .account-holder {
+  font-size: 15px;
+  color: #1565c0;
+  text-transform: uppercase;
+}

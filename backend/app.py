@@ -11,12 +11,16 @@ from urllib.parse import urlparse, parse_qs, unquote
 from PIL import Image
 from pyzbar.pyzbar import decode
 import qrcode
+
 from io import BytesIO
 from flask_cors import CORS
 
 # Import subscription modules
 from subscription import init_subscription_tables, check_scan_permission, check_feature_permission
 from subscription_routes import subscription_bp
+
+# Import VietQR parser
+from vietqr_parser import parse_emv_qr, is_bank_qr
 
 load_dotenv()
 
@@ -49,17 +53,58 @@ LAST_VT_CALL = 0
 MIN_INTERVAL = 16      # 4 request/phút
 VT_LOCK = threading.Lock()
 
+# Cache lâu dài trong DB (24 giờ)
+DB_CACHE_TTL = 24 * 60 * 60  # 24 giờ
+
 def _cache_get(url):
+    # 1. Memory cache trước (nhanh)
     item = URL_CACHE.get(url)
-    if not item: return None
-    ts, data = item
-    if time.time() - ts > CACHE_TTL:
+    if item:
+        ts, data = item
+        if time.time() - ts < CACHE_TTL:
+            return data
         URL_CACHE.pop(url, None)
-        return None
-    return data
+    
+    # 2. DB cache (lâu dài hơn)
+    try:
+        conn = get_db(); c = conn.cursor()
+        c.execute("""
+            SELECT is_safe, result, details, created_at 
+            FROM url_cache 
+            WHERE url = ? AND created_at > datetime('now', ?)
+            ORDER BY created_at DESC LIMIT 1
+        """, (url, f'-{DB_CACHE_TTL} seconds'))
+        row = c.fetchone()
+        conn.close()
+        
+        if row:
+            is_safe = bool(row[0])
+            message = row[1]
+            details = json.loads(row[2]) if row[2] else {}
+            result = (is_safe, message, details)
+            # Đưa vào memory cache luôn
+            URL_CACHE[url] = (time.time(), result)
+            return result
+    except Exception as e:
+        print(f"DB cache error: {e}")
+    
+    return None
 
 def _cache_set(url, data):
+    # 1. Memory cache
     URL_CACHE[url] = (time.time(), data)
+    
+    # 2. Lưu vào DB (lâu dài)
+    try:
+        is_safe, message, details = data
+        conn = get_db(); c = conn.cursor()
+        c.execute("""
+            INSERT OR REPLACE INTO url_cache (url, is_safe, result, details, created_at)
+            VALUES (?, ?, ?, ?, datetime('now'))
+        """, (url, 1 if is_safe else 0, message, json.dumps(details)))
+        conn.commit(); conn.close()
+    except Exception as e:
+        print(f"DB cache save error: {e}")
 
 def _throttle():
     global LAST_VT_CALL
@@ -205,6 +250,17 @@ def init_db():
         qr_image TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    """)
+    
+    # Thêm bảng cache URL (tránh gọi VirusTotal lặp lại)
+    c.execute("""
+      CREATE TABLE IF NOT EXISTS url_cache(
+        url TEXT PRIMARY KEY,
+        is_safe INTEGER DEFAULT 1,
+        result TEXT,
+        details TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     """)
     
@@ -602,6 +658,31 @@ def scan_qr():
         is_safe = True
         details_json = "{}"
 
+ # 1) VietQR / Ngân hàng (kiểm tra TRƯỚC khi check URL)
+        if is_bank_qr(qr_data):
+            qr_type = "bank"
+            result_msg = "🏦 QR Ngân hàng / Thanh toán"
+            
+            # Parse thông tin ngân hàng
+            bank_info = parse_emv_qr(qr_data)
+            
+            details_data = bank_info if bank_info else {}
+            
+            conn = get_db(); c = conn.cursor()
+            c.execute("""
+                INSERT INTO scan_history (user_id, qr_type, qr_content, result, is_safe, details)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (user_id, qr_type, qr_data, result_msg, 1, json.dumps(details_data)))
+            conn.commit(); conn.close()
+            
+            return jsonify({
+                "result": result_msg,
+                "data": qr_data,
+                "is_safe": True,
+                "is_bank": True,
+                "bank_info": details_data if details_data else None,
+                "bank_warning": "⚠️ Xác nhận người nhận trước khi chuyển tiền!"
+            })
         # 1) WiFi QR
         wifi_info = parse_wifi_qr(qr_data)
         if wifi_info:
@@ -721,8 +802,93 @@ def scan_qr():
             
             return jsonify({"result": result_msg, "data": qr_data, "is_safe": True})
 
-        # 3) Kiểm tra URL (VirusTotal)
+        # 2.5) KIỂM TRA FILE MACRO / EXECUTABLE
         qr_type = "url"
+        file_result = check_file_url_safety(qr_data)
+        
+        if file_result:
+            # Đây là URL tải file
+            qr_type = "file"
+            result_msg = file_result["message"]
+            is_safe = file_result["is_safe"] if file_result["is_safe"] is not None else False
+            
+            details_data = {
+                "file_extension": file_result["file_extension"],
+                "file_type": file_result["file_type"],
+                "has_macro_risk": file_result["has_macro_risk"],
+                "is_executable": file_result["is_executable"],
+                "macro_warning": file_result.get("macro_warning"),
+                "file_hash": file_result.get("file_hash"),
+                "vt_file_result": file_result.get("vt_file_result"),
+                "vt_url_result": file_result.get("vt_url_result"),
+                "file_hash_error": file_result.get("file_hash_error"),
+                "danger_level": file_result.get("danger_level", "unknown")
+            }
+            details_json = json.dumps(details_data)
+            
+            # Lưu lịch sử
+            conn = get_db(); c = conn.cursor()
+            c.execute("""
+                INSERT INTO scan_history (user_id, qr_type, qr_content, result, is_safe, details)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (user_id, qr_type, qr_data, result_msg, 1 if is_safe else 0, details_json))
+            conn.commit(); conn.close()
+            
+            return jsonify({
+                "result": result_msg,
+                "data": qr_data,
+                "is_safe": is_safe,
+                "is_file": True,
+                "file_info": details_data,
+                "details": file_result.get("vt_file_result") or file_result.get("vt_url_result") or {}
+            })
+
+        # 3) Kiểm tra URL - ƯU TIÊN LẤY TỪ LỊCH SỬ TRƯỚC
+        qr_type = "url"
+        
+        # 3a) Kiểm tra lịch sử quét của TẤT CẢ user (cùng URL = cùng kết quả)
+        conn = get_db(); c = conn.cursor()
+        c.execute("""
+            SELECT result, is_safe, details, created_at 
+            FROM scan_history 
+            WHERE qr_content = ? AND qr_type = 'url'
+            AND created_at > datetime('now', '-24 hours')
+            ORDER BY created_at DESC LIMIT 1
+        """, (qr_data,))
+        history_row = c.fetchone()
+        conn.close()
+        
+        if history_row:
+            # Đã quét URL này trong 24h → dùng kết quả cũ
+            result_msg = history_row[0]
+            is_safe = bool(history_row[1])
+            vt_details = json.loads(history_row[2]) if history_row[2] else {}
+            
+            # Lưu lịch sử cho user hiện tại
+            conn = get_db(); c = conn.cursor()
+            c.execute("""
+                INSERT INTO scan_history (user_id, qr_type, qr_content, result, is_safe, details)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (user_id, qr_type, qr_data, result_msg, 1 if is_safe else 0, json.dumps(vt_details)))
+            conn.commit(); conn.close()
+            
+            if not is_safe:
+                return jsonify({
+                    "result": f"Cảnh báo: {result_msg}",
+                    "data": qr_data,
+                    "details": vt_details,
+                    "is_safe": False,
+                    "cached": True
+                })
+            return jsonify({
+                "result": result_msg,
+                "data": qr_data,
+                "details": vt_details,
+                "is_safe": True,
+                "cached": True
+            })
+        
+        # 3b) Không có lịch sử → gọi VirusTotal
         is_safe, message, vt_details = check_url_safety(qr_data)
         result_msg = message
         details_json = json.dumps(vt_details)
@@ -747,6 +913,7 @@ def scan_qr():
             "details": vt_details,
             "is_safe": True
         })
+
     except Exception as e:
         return jsonify({
             "result": f"Lỗi khi quét mã QR: {str(e)}",
@@ -1235,7 +1402,61 @@ def extension_scan():
             "message": "Không phải URL - không cần kiểm tra"
         })
     
-    # Kiểm tra URL
+    # Kiểm tra file trước
+    file_result = check_file_url_safety(raw)
+    if file_result:
+        return jsonify({
+            "url": raw,
+            "is_safe": file_result["is_safe"] if file_result["is_safe"] is not None else False,
+            "result": file_result["message"],
+            "is_file": True,
+            "file_info": {
+                "file_extension": file_result["file_extension"],
+                "file_type": file_result["file_type"],
+                "has_macro_risk": file_result["has_macro_risk"],
+                "macro_warning": file_result.get("macro_warning"),
+                "vt_file_result": file_result.get("vt_file_result")
+            },
+            "details": file_result.get("vt_file_result") or file_result.get("vt_url_result") or {}
+        })
+    
+    # Kiểm tra trong DB cache trước
+    cached = _cache_get(raw)
+    if cached:
+        is_safe, message, details = cached
+        return jsonify({
+            "url": raw,
+            "is_safe": is_safe,
+            "result": message,
+            "details": details,
+            "cached": True
+        })
+    
+    # Kiểm tra trong scan_history
+    try:
+        conn = get_db(); c = conn.cursor()
+        c.execute("""
+            SELECT result, is_safe, details 
+            FROM scan_history 
+            WHERE qr_content = ? AND qr_type IN ('url', 'file')
+            AND created_at > datetime('now', '-24 hours')
+            ORDER BY created_at DESC LIMIT 1
+        """, (raw,))
+        row = c.fetchone()
+        conn.close()
+        
+        if row:
+            return jsonify({
+                "url": raw,
+                "is_safe": bool(row[1]),
+                "result": row[0],
+                "details": json.loads(row[2]) if row[2] else {},
+                "cached": True
+            })
+    except Exception:
+        pass
+    
+    # Không có cache → gọi VirusTotal
     is_safe, message, details = check_url_safety(raw)
     
     return jsonify({
@@ -1245,15 +1466,297 @@ def extension_scan():
         "details": details
     })
 
-#if __name__ == "__main__":
- #   app.run(host="0.0.0.0", port=5000, ssl_context='adhoc')
+# ===== MACRO FILE DETECTION =====
+
+# Đuôi file có thể chứa macro
+MACRO_EXTENSIONS = {
+    '.docm': 'Word',
+    '.xlsm': 'Excel',
+    '.pptm': 'PowerPoint',
+    '.dotm': 'Word Template',
+    '.xltm': 'Excel Template',
+    '.potm': 'PowerPoint Template',
+    '.doc': 'Word',
+    '.xls': 'Excel',
+    '.ppt': 'PowerPoint',
+    '.docx': 'Word',
+    '.xlsx': 'Excel',
+    '.pptx': 'PowerPoint',
+    '.pdf': 'PDF',
+    '.zip': 'File nén ZIP',
+    '.rar': 'File nén RAR',
+    '.7z': 'File nén 7Z',
+    '.iso': 'File ISO',
+    '.exe': 'File thực thi',
+    '.msi': 'File cài đặt',
+    '.bat': 'File Batch',
+    '.cmd': 'File Command',
+    '.ps1': 'PowerShell Script',
+    '.vbs': 'VBScript',
+    '.js': 'JavaScript',
+    '.jar': 'Java Archive',
+    '.apk': 'Android App',
+    '.dmg': 'macOS Disk Image',
+    '.scr': 'Screensaver',
+}
+
+# Đuôi file CHẮC CHẮN có macro
+DEFINITE_MACRO_EXTENSIONS = {'.docm', '.xlsm', '.pptm', '.dotm', '.xltm', '.potm'}
+
+# Đuôi file CÓ THỂ chứa macro (định dạng cũ)
+POSSIBLE_MACRO_EXTENSIONS = {'.doc', '.xls', '.ppt'}
+
+# Đuôi file nguy hiểm (thực thi)
+EXECUTABLE_EXTENSIONS = {'.exe', '.msi', '.bat', '.cmd', '.ps1', '.vbs', '.js', '.jar', '.scr', '.com', '.pif'}
+
+MACRO_WARNING = (
+    "📋 Macro là gì?\n"
+    "Macro là đoạn mã tự động chạy bên trong file Office (Word, Excel, PowerPoint).\n\n"
+    "⚠️ Tại sao nguy hiểm?\n"
+    "• Hacker nhúng mã độc vào macro để đánh cắp dữ liệu, cài ransomware\n"
+    "• Khi bạn mở file và bấm 'Enable Macros' → mã độc sẽ tự chạy\n"
+    "• File .docm, .xlsm, .pptm LUÔN chứa macro\n"
+    "• File .doc, .xls (định dạng cũ) CÓ THỂ chứa macro\n\n"
+    "🛡️ Cách phòng tránh:\n"
+    "• Không bao giờ bấm 'Enable Macros' nếu không chắc nguồn gốc file\n"
+    "• Không tải file Office từ nguồn không tin cậy"
+)
+
+def detect_file_from_url(url):
+    """Phát hiện đuôi file từ URL"""
+    try:
+        parsed = urlparse(url.split('?')[0].split('#')[0])
+        path = parsed.path.lower()
+        
+        for ext in MACRO_EXTENSIONS:
+            if path.endswith(ext):
+                return ext, MACRO_EXTENSIONS[ext]
+        
+        return None, None
+    except:
+        return None, None
+
+def check_file_hash_virustotal(file_hash):
+    """Kiểm tra hash file trên VirusTotal"""
+    try:
+        headers = {"x-apikey": VIRUSTOTAL_API_KEY}
+        _throttle()
+        resp = requests.get(
+            f"https://www.virustotal.com/api/v3/files/{file_hash}",
+            headers=headers, timeout=20
+        )
+        
+        if resp.status_code == 404:
+            return None  # Chưa có trên VT
+        
+        data = _safe_json(resp)
+        stats = data.get("data", {}).get("attributes", {}).get("last_analysis_stats", {})
+        
+        malicious = int(stats.get("malicious", 0))
+        suspicious = int(stats.get("suspicious", 0))
+        undetected = int(stats.get("undetected", 0))
+        harmless = int(stats.get("harmless", 0))
+        total = malicious + suspicious + undetected + harmless
+        
+        # Lấy tên các engine phát hiện
+        results = data.get("data", {}).get("attributes", {}).get("last_analysis_results", {})
+        detected_engines = []
+        for engine, result in results.items():
+            if result.get("category") in ("malicious", "suspicious"):
+                detected_engines.append({
+                    "engine": engine,
+                    "result": result.get("result", "Unknown"),
+                    "category": result.get("category")
+                })
+        
+        return {
+            "malicious": malicious,
+            "suspicious": suspicious,
+            "harmless": harmless,
+            "undetected": undetected,
+            "total": total,
+            "detected_engines": detected_engines[:10]  # Top 10
+        }
+    except Exception as e:
+        print(f"VT file check error: {e}")
+        return None
+
+def download_and_hash_file(url, max_size_mb=50):
+    """Tải file tạm, tính hash SHA256"""
+    try:
+        _throttle()
+        resp = requests.get(url, stream=True, timeout=30, allow_redirects=True)
+        
+        if resp.status_code != 200:
+            return None, None, f"Không tải được file (HTTP {resp.status_code})"
+        
+        # Kiểm tra kích thước
+        content_length = resp.headers.get('Content-Length')
+        if content_length and int(content_length) > max_size_mb * 1024 * 1024:
+            return None, None, f"File quá lớn (>{max_size_mb}MB)"
+        
+        # Tải và hash
+        sha256 = hashlib.sha256()
+        md5 = hashlib.md5()
+        total_size = 0
+        
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            for chunk in resp.iter_content(chunk_size=8192):
+                if chunk:
+                    total_size += len(chunk)
+                    if total_size > max_size_mb * 1024 * 1024:
+                        os.unlink(tmp.name)
+                        return None, None, f"File quá lớn (>{max_size_mb}MB)"
+                    sha256.update(chunk)
+                    md5.update(chunk)
+                    tmp.write(chunk)
+            
+            tmp_path = tmp.name
+        
+        # Xóa file tạm ngay
+        try:
+            os.unlink(tmp_path)
+        except:
+            pass
+        
+        return sha256.hexdigest(), md5.hexdigest(), None
+        
+    except requests.exceptions.Timeout:
+        return None, None, "Timeout khi tải file"
+    except Exception as e:
+        return None, None, f"Lỗi tải file: {str(e)}"
+
+def check_file_url_safety(url):
+    """
+    Kiểm tra URL tải file:
+    1. Phát hiện đuôi file → cảnh báo macro
+    2. Tải file → hash → gửi VirusTotal kiểm tra
+    """
+    ext, file_type = detect_file_from_url(url)
+    
+    if not ext:
+        return None  # Không phải file → xử lý URL bình thường
+    
+    result = {
+        "is_file": True,
+        "file_extension": ext,
+        "file_type": file_type,
+        "has_macro_risk": False,
+        "is_executable": False,
+        "macro_warning": None,
+        "vt_file_result": None,
+        "vt_url_result": None,
+        "file_hash": None,
+        "is_safe": None,
+        "message": "",
+        "danger_level": "unknown"
+    }
+    
+    # 1. Phát hiện macro
+    if ext in DEFINITE_MACRO_EXTENSIONS:
+        result["has_macro_risk"] = True
+        result["macro_warning"] = MACRO_WARNING
+        result["message"] = f"🚨 FILE CHỨA MACRO ({file_type})"
+    elif ext in POSSIBLE_MACRO_EXTENSIONS:
+        result["has_macro_risk"] = True
+        result["macro_warning"] = MACRO_WARNING
+        result["message"] = f"⚠️ File {file_type} - CÓ THỂ chứa macro"
+    elif ext in EXECUTABLE_EXTENSIONS:
+        result["is_executable"] = True
+        result["message"] = f"🚨 FILE THỰC THI ({file_type})"
+    else:
+        result["message"] = f"📁 File tải về: {file_type}"
+    
+    # 2. Kiểm tra URL trên VirusTotal trước
+    cached = _cache_get(url)
+    if cached:
+        is_safe_url, msg_url, details_url = cached
+        result["vt_url_result"] = details_url
+    else:
+        is_safe_url, msg_url, details_url = check_url_safety(url)
+        result["vt_url_result"] = details_url
+    
+    # 3. Tải file, hash, kiểm tra trên VT
+    sha256, md5, error = download_and_hash_file(url)
+    
+    if error:
+        result["file_hash_error"] = error
+    elif sha256:
+        result["file_hash"] = sha256
+        
+        # Check cache file hash
+        file_cache_key = f"file:{sha256}"
+        cached_file = _cache_get(file_cache_key)
+        
+        if cached_file:
+            _, _, vt_file = cached_file
+            result["vt_file_result"] = vt_file
+        else:
+            vt_file = check_file_hash_virustotal(sha256)
+            if vt_file:
+                result["vt_file_result"] = vt_file
+                is_safe_file = vt_file["malicious"] == 0 and vt_file["suspicious"] == 0
+                _cache_set(file_cache_key, (is_safe_file, "", vt_file))
+    
+    # 4. Tổng hợp kết quả
+    vt_file = result.get("vt_file_result")
+    vt_url_details = result.get("vt_url_result", {})
+    
+    url_malicious = vt_url_details.get("malicious", 0) if isinstance(vt_url_details, dict) else 0
+    file_malicious = vt_file.get("malicious", 0) if vt_file else 0
+    file_suspicious = vt_file.get("suspicious", 0) if vt_file else 0
+    
+    if file_malicious > 0 or url_malicious > 0:
+        # CÓ MÃ ĐỘC → CHẶN, không cho mở
+        result["is_safe"] = False
+        result["danger_level"] = "blocked"
+        total_threats = file_malicious + url_malicious
+        result["message"] = f"🚫 NGUY HIỂM! {total_threats} engine phát hiện mã độc"
+        if result["has_macro_risk"]:
+            result["message"] += f" + FILE CHỨA MACRO ({file_type})"
+    elif file_suspicious > 0:
+        # NGHI NGỜ → cảnh báo mạnh
+        result["is_safe"] = False
+        result["danger_level"] = "suspicious"
+        result["message"] = f"⚠️ ĐÁNG NGỜ - {file_suspicious} engine cảnh báo"
+        if result["has_macro_risk"]:
+            result["message"] += f" + CÓ THỂ CHỨA MACRO"
+    elif result["has_macro_risk"]:
+        # CÓ MACRO nhưng KHÔNG phát hiện mã độc → NGHI NGỜ, cho mở có xác nhận
+        result["is_safe"] = False
+        result["danger_level"] = "macro_warning"
+        if vt_file and vt_file.get("total", 0) > 0:
+            result["message"] = f"⚠️ File {file_type} chứa Macro - Chưa phát hiện mã độc ({vt_file.get('harmless', 0)} engine sạch)"
+        else:
+            result["message"] = f"⚠️ File {file_type} chứa Macro - Không thể xác minh nội dung"
+    elif result["is_executable"]:
+        # FILE THỰC THI → cảnh báo, cho mở có xác nhận
+        result["is_safe"] = False
+        result["danger_level"] = "executable_warning"
+        if vt_file and vt_file.get("total", 0) > 0:
+            result["message"] = f"⚠️ {file_type} - Chưa phát hiện mã độc ({vt_file.get('harmless', 0)} engine sạch)"
+        else:
+            result["message"] = f"⚠️ {file_type} - Không thể xác minh"
+    elif vt_file:
+        result["is_safe"] = True
+        result["danger_level"] = "safe"
+        result["message"] = f"✅ File an toàn ({vt_file.get('harmless', 0)} engine xác nhận) - {file_type}"
+    else:
+        result["is_safe"] = False
+        result["danger_level"] = "unknown"
+        result["message"] = f"⚠️ Không thể xác minh file {file_type}"
+    
+    return result
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, ssl_context='adhoc')
 
     # ...existing code...
 # ...existing code...
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     # BỎ ssl_context='adhoc' để chạy HTTP
-    app.run(host="0.0.0.0", port=5000, debug=True)
+  #  app.run(host="0.0.0.0", port=5000, debug=True)
 #if __name__ == "__main__":
     # Cấu hình ngrok authtoken
  

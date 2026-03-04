@@ -1,0 +1,11 @@
+#GIT TRÊN PYTHONANYWHERE
+cp ~/QRChecker/backend/users.db ~/users.db.backup
+rm -rf ~/QRChecker
+git clone https://github.com/YOUR_REPO/QRChecker.git ~/QRChecker
+cp ~/users.db.backup ~/QRChecker/backend/users.db
+
+#GIT TRÊN GITHUB 
+git add .
+git commit -m "Initial commit"
+git push origin main --force  
+NHỚ TRẢ VỀ FOLDER QRCHECKER

@@ -59,6 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
         hoverDelaySlider.value = s.hoverDelay;
         delayValue.textContent = (s.hoverDelay / 1000) + 's';
         showTooltipCheckbox.checked = s.showTooltip;
+        // Load fileWarning
+        const fw = document.getElementById('fileWarning');
+        if (fw) fw.checked = s.fileWarning !== false;
       }
     });
   }
@@ -102,29 +105,27 @@ document.addEventListener('DOMContentLoaded', () => {
   function showError(msg) { loginError.textContent = msg; loginError.classList.add('show'); }
   function hideError() { loginError.classList.remove('show'); }
 
-  // Settings
-  hoverDelaySlider.addEventListener('input', () => {
-    delayValue.textContent = (hoverDelaySlider.value / 1000) + 's';
-  });
-
+  // Settings change handlers
   function saveSettings() {
-    chrome.runtime.sendMessage({
-      action: 'saveSettings',
-      settings: {
-        enabled: enabledCheckbox.checked,
-        hoverDelay: parseInt(hoverDelaySlider.value),
-        showTooltip: showTooltipCheckbox.checked
-      }
-    }, (resp) => {
-      if (resp && resp.success) {
-        statusDiv.textContent = '✓ Đã lưu';
-        statusDiv.classList.add('saved');
-        setTimeout(() => { statusDiv.textContent = '✅ Sẵn sàng'; statusDiv.classList.remove('saved'); }, 1500);
-      }
-    });
+    const s = {
+      enabled: enabledCheckbox.checked,
+      hoverDelay: parseInt(hoverDelaySlider.value),
+      showTooltip: showTooltipCheckbox.checked,
+      fileWarning: document.getElementById('fileWarning')?.checked !== false
+    };
+    chrome.runtime.sendMessage({ action: 'saveSettings', settings: s });
+    delayValue.textContent = (s.hoverDelay / 1000) + 's';
+    statusDiv.textContent = '💾 Đã lưu';
+    statusDiv.classList.add('saved');
+    setTimeout(() => { statusDiv.textContent = '✅ Sẵn sàng'; statusDiv.classList.remove('saved'); }, 1500);
   }
 
   enabledCheckbox.addEventListener('change', saveSettings);
+  hoverDelaySlider.addEventListener('input', () => {
+    delayValue.textContent = (hoverDelaySlider.value / 1000) + 's';
+  });
   hoverDelaySlider.addEventListener('change', saveSettings);
   showTooltipCheckbox.addEventListener('change', saveSettings);
+  const fwCheckbox = document.getElementById('fileWarning');
+  if (fwCheckbox) fwCheckbox.addEventListener('change', saveSettings);
 });

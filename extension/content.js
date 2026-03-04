@@ -359,4 +359,183 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
 
+  function showQRTooltip(imgEl, result) {
+    hideTooltip();
+    if (!settings.showTooltip && result.status !== 'danger') return;
+
+    const tooltip = document.createElement('div');
+    tooltip.className = `qrc-tooltip qrc-${result.level || result.status}`;
+
+    let content = `<div class="qrc-tooltip-header">${result.message}</div>`;
+
+    // Chi tiết
+    if (result.details && typeof result.details === 'string') {
+      const lines = result.details.split('\n');
+      content += '<div class="qrc-tooltip-detail">';
+      lines.forEach(line => {
+        content += `<div style="margin:2px 0">${line}</div>`;
+      });
+      content += '</div>';
+    }
+
+    // Nguồn kiểm tra
+    if (result.source) {
+      const sourceLabel = result.source === 'virustotal' ? '🛡️ VirusTotal'
+                        : result.source === 'backend' ? '🌐 Server'
+                        : '📱 Offline';
+      content += `<div class="qrc-tooltip-source">Nguồn: ${sourceLabel}</div>`;
+    }
+
+    // Gợi ý đăng nhập
+    if (result.extra) {
+      content += `<div class="qrc-tooltip-extra">${result.extra}</div>`;
+    }
+
+    // URL - NẾU AN TOÀN thì cho click để mở, NẾU NGUY HIỂM thì chỉ hiển thị
+    if (result.url) {
+      if (result.level === 'safe' || result.level === 'info') {
+        // An toàn → link clickable
+        content += `<a class="qrc-tooltip-url qrc-url-link" href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer" title="Click để mở: ${escapeHtml(result.url)}">🔗 ${truncate(result.url, 55)}</a>`;
+      } else if (result.level === 'warning') {
+        // Cảnh báo → link nhưng có xác nhận
+        content += `<a class="qrc-tooltip-url qrc-url-warn" href="#" data-url="${escapeHtml(result.url)}" title="Click để mở (cẩn thận!)">⚠️ ${truncate(result.url, 55)}</a>`;
+      } else {
+        // Nguy hiểm → không cho click
+        content += `<div class="qrc-tooltip-url qrc-url-danger">🚫 ${truncate(result.url, 55)}</div>`;
+      }
+    }
+
+    content += `<button class="qrc-tooltip-close" onclick="this.parentElement.remove()">×</button>`;
+
+    tooltip.innerHTML = content;
+
+    // Icon và màu theo loại
+    let bgColor, borderColor, icon;
+    
+    if (result.status === 'danger') {
+      bgColor = '#fef2f2';
+      borderColor = '#ef4444';
+      icon = '🚨';
+    } else if (result.status === 'warning') {
+      bgColor = '#fffbeb';
+      borderColor = '#f59e0b';
+      icon = '⚠️';
+    } else if (result.status === 'safe') {
+      bgColor = '#f0fdf4';
+      borderColor = '#22c55e';
+      icon = '✅';
+    } else {
+      bgColor = '#f0f9ff';
+      borderColor = '#3b82f6';
+      icon = 'ℹ️';
+    }
+    
+    // File info badge
+    let fileTag = '';
+    if (result.type === 'file' && result.fileInfo) {
+      const fi = result.fileInfo;
+      if (fi.hasMacro) {
+        fileTag = `<div style="background:#dc2626;color:white;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-top:6px;display:inline-block;">
+          ⚠️ MACRO - ${fi.type}
+        </div>`;
+      } else if (fi.isExe) {
+        fileTag = `<div style="background:#dc2626;color:white;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-top:6px;display:inline-block;">
+          🚨 FILE THỰC THI - ${fi.type}
+        </div>`;
+      } else {
+        fileTag = `<div style="background:#6b7280;color:white;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;margin-top:6px;display:inline-block;">
+          📄 ${fi.type}
+        </div>`;
+      }
+    }
+    
+    // Tooltip content
+    const detailLines = (result.details || '').split('\n').map(l => {
+      l = l.trim();
+      if (!l) return '';
+      if (l.startsWith('•')) return `<div style="padding-left:12px;font-size:11px;color:#555;">• ${l.substring(1).trim()}</div>`;
+      if (l.startsWith('🔴') || l.startsWith('🚫')) return `<div style="color:#dc2626;font-weight:600;font-size:12px;">${l}</div>`;
+      if (l.startsWith('✅')) return `<div style="color:#16a34a;font-size:12px;">${l}</div>`;
+      if (l.startsWith('⚠️')) return `<div style="color:#d97706;font-size:12px;">${l}</div>`;
+      if (l.startsWith('📊')) return `<div style="color:#2563eb;font-size:11px;margin-top:4px;padding-top:4px;border-top:1px solid #e5e7eb;">${l}</div>`;
+      return `<div style="font-size:12px;">${l}</div>`;
+    }).join('');
+    
+    tooltip.innerHTML = `
+      <div style="padding:12px;max-width:300px;font-family:'Segoe UI',sans-serif;">
+        <div style="font-weight:700;font-size:13px;color:${borderColor};margin-bottom:6px;">
+          ${icon} ${result.message || 'QR Checker'}
+        </div>
+        ${fileTag}
+        <div style="margin-top:8px;">
+          ${detailLines}
+        </div>
+      </div>
+    `;
+    
+    // Xử lý click URL cảnh báo (xác nhận trước)
+    const warnLink = tooltip.querySelector('.qrc-url-warn');
+    if (warnLink) {
+      warnLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = warnLink.getAttribute('data-url');
+        if (confirm(`⚠️ URL này có dấu hiệu đáng ngờ!\n\n${url}\n\nBạn vẫn muốn mở?`)) {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+      });
+    }
+
+    // Hover vào tooltip → không tự ẩn
+    tooltip.addEventListener('mouseenter', () => {
+      if (tooltipTimer) { clearTimeout(tooltipTimer); tooltipTimer = null; }
+    });
+
+    // Rời tooltip → bắt đầu đếm lại
+    tooltip.addEventListener('mouseleave', () => {
+      const duration = result.level === 'danger' ? 30000 : 8000;
+      autoHide(duration);
+    });
+
+    positionTooltip(tooltip, element);
+    document.body.appendChild(tooltip);
+    currentTooltip = tooltip;
+
+    // Auto hide - thời gian dài hơn
+    if (result.status !== 'loading') {
+      let duration;
+      if (result.level === 'danger') {
+        duration = 60000;     // Nguy hiểm: 60s
+      } else if (result.level === 'warning') {
+        duration = 30000;     // Cảnh báo: 30s
+      } else if (result.level === 'safe' && result.url) {
+        duration = 20000;     // An toàn có URL: 20s (để user kịp click)
+      } else if (result.level === 'info') {
+        duration = 10000;     // Info: 10s
+      } else {
+        duration = 8000;      // Mặc định: 8s
+      }
+      autoHide(duration);
+    }
+  }
+
+  function hideTooltip() {
+    if (tooltipTimer) { clearTimeout(tooltipTimer); tooltipTimer = null; }
+    if (currentTooltip) { currentTooltip.remove(); currentTooltip = null; }
+  }
+
+  function positionTooltip(el, target) {
+    const rect = target.getBoundingClientRect();
+    el.style.position = 'absolute';
+    el.style.left = `${rect.left + window.scrollX + rect.width / 2}px`;
+    el.style.top = `${rect.top + window.scrollY - 10}px`;
+    el.style.transform = 'translate(-50%, -100%)';
+    el.style.zIndex = '2147483647';
+  }
+
+  function truncate(s, n) { return s && s.length > n ? s.slice(0, n) + '...' : (s || ''); }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
 })();

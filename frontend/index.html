@@ -185,12 +185,26 @@ function showLoading(){
   setResultHTML('<div class="loading"><div class="spinner"></div><span>Đang phân tích...</span></div>');
 }
 function classifyStatus(data){
+  if(data.is_bank) return {label:'🏦 Ngân hàng', cls:'tag warn'};
   if(data.wifi) return {label:'WiFi', cls:'tag accent'};
   if(data.email) return {label:'Email', cls:'tag neutral'};
   if(data.phone) return {label:'Phone', cls:'tag neutral'};
   if(data.sms) return {label:'SMS', cls:'tag neutral'};
   if(data.text) return {label:'Text', cls:'tag neutral'};
   if(data.vietqr_info) return {label:'VietQR', cls:'tag accent'};
+  
+  // File / Macro detection
+  if(data.is_file && data.file_info){
+    const dl = data.file_info.danger_level || 'unknown';
+    
+    if(dl === 'blocked') return {label:'🚫 Blocked', cls:'tag danger'};
+    if(dl === 'suspicious') return {label:'⚠️ Suspicious', cls:'tag warn'};
+    if(dl === 'macro_warning') return {label:'⚠️ Macro', cls:'tag warn'};
+    if(dl === 'executable_warning') return {label:'⚠️ Executable', cls:'tag warn'};
+    if(dl === 'safe') return {label:'✅ Safe', cls:'tag safe'};
+    return {label:'❓ Unknown', cls:'tag neutral'};
+  }
+  
   if(data.details){
     if(data.details.malicious>0) return {label:'Malicious', cls:'tag danger'};
     if(data.details.suspicious>0) return {label:'Suspicious', cls:'tag warn'};
@@ -429,6 +443,185 @@ function showResult(data){
       <span class="status-text">${data.result||'Kết quả'}</span>
   </div>`;
 
+  // ===== QR NGÂN HÀNG =====
+   if(data.is_bank){
+    const bi = data.bank_info;
+    
+    if(bi && (bi.bank_name || bi.account_masked)){
+      html += `<div class="sub-block bank-info-block">
+        <h4>🏦 Thông tin chuyển khoản</h4>
+        <div class="bank-info-grid">
+          ${bi.bank_name ? `<div class="kv"><span>Ngân hàng:</span><strong>${escapeHTML(bi.bank_name)}</strong></div>` : ''}
+          ${bi.bank_full ? `<div class="kv"><span>Tên đầy đủ:</span><code>${escapeHTML(bi.bank_full)}</code></div>` : ''}
+          ${bi.account_name ? `<div class="kv"><span>Chủ tài khoản:</span><strong class="account-holder">${escapeHTML(bi.account_name)}</strong></div>` : ''}
+          ${bi.account_masked ? `<div class="kv"><span>Số tài khoản:</span><code class="account-number">${escapeHTML(bi.account_masked)}</code></div>` : ''}
+          ${bi.amount ? `<div class="kv"><span>Số tiền:</span><strong class="amount">${Number(bi.amount).toLocaleString('vi-VN')} ${bi.currency || 'VND'}</strong></div>` : ''}
+          ${bi.description ? `<div class="kv"><span>Nội dung CK:</span><code>${escapeHTML(bi.description)}</code></div>` : ''}
+          ${bi.merchant_name ? `<div class="kv"><span>Người nhận:</span><code>${escapeHTML(bi.merchant_name)}</code></div>` : ''}
+          ${bi.merchant_city ? `<div class="kv"><span>Thành phố:</span><code>${escapeHTML(bi.merchant_city)}</code></div>` : ''}
+        </div>
+      </div>`;
+    }
+    
+    html += `<div class="sub-block bank-warning-block">
+      <h4>⚠️ Lưu ý an toàn</h4>
+      <div class="bank-warning-content">
+        <div class="bank-warning-icon">⚠️</div>
+        <div class="bank-warning-text">
+          <p><strong>Xác nhận người nhận trước khi chuyển tiền!</strong></p>
+          <ul>
+            <li>Kiểm tra kỹ tên người nhận, số tài khoản trên app ngân hàng</li>
+            <li>Không chuyển tiền cho người lạ qua mã QR</li>
+            <li>Cẩn thận với mã QR dán đè tại cửa hàng, quán ăn</li>
+            <li>Xác nhận số tiền trước khi bấm chuyển</li>
+          </ul>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ===== FILE / MACRO WARNING =====
+  if(data.is_file && data.file_info){
+    const fi = data.file_info;
+    const dl = fi.danger_level || 'unknown';
+
+    // Cảnh báo Macro
+    if(fi.has_macro_risk && fi.macro_warning){
+      html += `<div class="sub-block macro-warning-block">
+        <h4>🚨 Cảnh báo Macro</h4>
+        <div class="macro-warning-content">`;
+      
+      const lines = fi.macro_warning.split('\n');
+      let currentSection = '';
+      
+      lines.forEach(line => {
+        line = line.trim();
+        if(!line) return;
+        
+        if(line.startsWith('📋') || line.startsWith('⚠️') || line.startsWith('🛡️')){
+          if(currentSection) html += '</ul>';
+          html += `<div class="macro-section-title">${escapeHTML(line)}</div><ul>`;
+          currentSection = line;
+        } else if(line.startsWith('•')){
+          html += `<li>${escapeHTML(line.substring(1).trim())}</li>`;
+        } else {
+          html += `<p>${escapeHTML(line)}</p>`;
+        }
+      });
+      
+      if(currentSection) html += '</ul>';
+      html += `</div></div>`;
+    }
+
+    // File thực thi
+    if(fi.is_executable && !fi.has_macro_risk){
+      html += `<div class="sub-block" style="background:#fff3cd;border-left:4px solid #ffc107;padding:12px;border-radius:8px;">
+        <h4>🚨 File thực thi</h4>
+        <p style="margin:4px 0">Đây là file có thể chạy trực tiếp trên máy tính.<br>
+        <strong>Không nên tải và mở file từ nguồn không tin cậy!</strong></p>
+      </div>`;
+    }
+
+    // VirusTotal cho file (GIỐNG URL)
+    if(fi.vt_file_result){
+      const vf = fi.vt_file_result;
+      const clean = vf.harmless || 0;
+      const suspicious = vf.suspicious || 0;
+      const malicious = vf.malicious || 0;
+      const undetected = vf.undetected || 0;
+      const total = clean + suspicious + malicious + undetected;
+      
+      html += `<div class="sub-block">
+        <h4>VirusTotal</h4>
+        <div class="vt-stats">
+          <div class="pill safe">An toàn: ${clean}</div>
+          <div class="pill warn">Nghi ngờ: ${suspicious}</div>
+          <div class="pill danger">Độc hại: ${malicious}</div>
+          <div class="pill neutral">Không phát hiện: ${undetected}</div>
+          ${total > 0 ? `
+          <div class="progress-bar-wrap">
+            <div class="seg safe" style="width:${(clean/total)*100}%"></div>
+            <div class="seg warn" style="width:${(suspicious/total)*100}%"></div>
+            <div class="seg danger" style="width:${(malicious/total)*100}%"></div>
+          </div>` : ''}
+          <div class="total small">Tổng engine: ${total}</div>
+        </div>
+      </div>`;
+
+      // Engine phát hiện mã độc
+      if(vf.detected_engines && vf.detected_engines.length > 0){
+        html += `<div class="sub-block" style="background:#f8d7da;border-radius:8px;padding:12px;">
+          <h4>🔴 Engine phát hiện mã độc</h4>
+          <table class="engine-table">
+            <tr><th>Engine</th><th>Kết quả</th><th>Phân loại</th></tr>`;
+        vf.detected_engines.forEach(eng => {
+          const cls = eng.category === 'malicious' ? 'danger' : 'warn';
+          html += `<tr>
+            <td><strong>${escapeHTML(eng.engine)}</strong></td>
+            <td><code>${escapeHTML(eng.result)}</code></td>
+            <td><span class="pill ${cls}">${eng.category === 'malicious' ? 'Độc hại' : 'Nghi ngờ'}</span></td>
+          </tr>`;
+        });
+        html += `</table></div>`;
+      }
+    }
+
+    // ===== LINK HÀNH ĐỘNG THEO DANGER LEVEL =====
+    if(data.data && isLikelyUrl(data.data)){
+      if(dl === 'blocked'){
+        // CÓ MÃ ĐỘC → CHẶN HOÀN TOÀN
+        html += `<div class="sub-block file-link-blocked">
+          <h4>🚫 Liên kết bị chặn</h4>
+          <div class="blocked-url">${escapeHTML(data.data)}</div>
+          <p class="blocked-msg">
+            File này chứa mã độc được xác nhận bởi nhiều engine bảo mật.<br>
+            <strong>Liên kết đã bị vô hiệu hóa để bảo vệ bạn.</strong>
+          </p>s
+        </div>`;
+        
+      } else if(dl === 'macro_warning' || dl === 'executable_warning' || dl === 'suspicious' || dl === 'unknown'){
+        // NGHI NGỜ / MACRO KHÔNG MÃ ĐỘC → HIỆN LINK, HOVER XÁC NHẬN
+        const warningTitle = dl === 'macro_warning' 
+          ? 'File chứa Macro - Chưa phát hiện mã độc'
+          : dl === 'executable_warning'
+          ? 'File thực thi - Chưa phát hiện mã độc'
+          : dl === 'suspicious'
+          ? 'File đáng ngờ'
+          : 'Không thể xác minh file';
+        
+        const warningMsg = dl === 'macro_warning'
+          ? 'File này chứa Macro. Mặc dù chưa phát hiện mã độc, Macro vẫn có thể gây nguy hiểm nếu bạn bấm "Enable Macros" khi mở file.'
+          : dl === 'executable_warning'
+          ? 'Đây là file thực thi có thể chạy trực tiếp trên máy tính. Chỉ mở nếu bạn hoàn toàn tin tưởng nguồn gốc file.'
+          : dl === 'suspicious'
+          ? 'Một số engine bảo mật đã đánh dấu file này là đáng ngờ.'
+          : 'Không thể xác minh nội dung file này.';
+        
+        html += `<div class="sub-block file-link-warning">
+          <h4>⚠️ ${warningTitle}</h4>
+          <p class="warning-desc">${warningMsg}</p>
+          <div class="file-link-hover-wrap">
+            <a class="file-link-caution" href="${escapeHTML(data.data)}" target="_blank" rel="noopener noreferrer"
+               onclick="return confirmOpenFileLink(event, '${dl}')">
+              ${escapeHTML(data.data)}
+            </a>
+            <div class="file-link-tooltip">
+              ⚠️ Bạn có chắc chắn muốn mở liên kết này?<br>
+              <small>Nhấn vào để xác nhận mở</small>
+            </div>
+          </div>
+        </div>`;
+        
+      } else if(dl === 'safe'){
+        // AN TOÀN → cho mở bình thường
+        html += `<div class="sub-block">
+          <h4>🔗 Liên kết</h4>
+          <a class="safe-link" href="${escapeHTML(data.data)}" target="_blank" rel="noopener noreferrer">${escapeHTML(data.data)}</a>
+        </div>`;
+      }
+    }
+  }
+
   // WiFi
   if(data.wifi){
     const w = data.wifi;
@@ -482,13 +675,13 @@ function showResult(data){
     </div>`;
   }
 
-  // Link an toàn (Clean) -> hiển thị đường dẫn có thể bấm
+  // Link an toàn (Clean) -> hiển thị đường dẫn có thể bấm (CHỈ KHI KHÔNG PHẢI FILE)
   const likelyUrl = data && data.data && isLikelyUrl(data.data);
   const vt = data && data.details;
   const safeByVT = !!(vt && vt.total>0 && vt.malicious===0 && vt.suspicious===0);
   const safeByMsg = typeof data.result==='string' && data.result.toLowerCase().includes('an toàn');
 
-  if(likelyUrl && !data.wifi && !data.email && !data.phone && !data.sms && !data.text && (safeByVT || safeByMsg)){
+  if(!data.is_file && likelyUrl && !data.wifi && !data.email && !data.phone && !data.sms && !data.text && (safeByVT || safeByMsg)){
     const href = data.data;
     html += `<div class="sub-block">
       <h4>Liên kết</h4>
@@ -496,17 +689,20 @@ function showResult(data){
     </div>`;
   }
 
-  // Nếu không phải case trên, in nội dung thô
-  if(data.data && !data.wifi && !data.text && !data.email && !data.phone && !data.sms && !(likelyUrl && (safeByVT || safeByMsg))){
+  // Nếu không phải case trên, in nội dung thô (KHÔNG PHẢI FILE)
+  if(!data.is_file && data.data && !data.wifi && !data.text && !data.email && !data.phone && !data.sms && !(likelyUrl && (safeByVT || safeByMsg))){
     html+=`<div class="kv"><span>Nội dung</span><code>${escapeHTML(data.data)}</code></div>`;
   }
+
   if(data.vietqr_info){
     html+=`<div class="sub-block">
         <h4>VietQR</h4>
         <div class="vietqr">${data.vietqr_info}</div>
     </div>`;
   }
-  if(data.details){
+  
+  // VirusTotal (chỉ hiện nếu KHÔNG PHẢI file)
+  if(data.details && !data.is_file){
     const d=data.details;
     html+=`
     <div class="sub-block">
@@ -524,23 +720,59 @@ function showResult(data){
       </div>
     </div>`;
   }
+
+ 
   resultDiv.classList.remove('muted');
   setResultHTML(html);
 }
 
-// === Navbar auth label/link ===
+// Hàm xác nhận mở link file nghi ngờ
+function confirmOpenFileLink(event, dangerLevel){
+  let msg = '';
+  if(dangerLevel === 'macro_warning'){
+    msg = '⚠️ CẢNH BÁO: File này chứa Macro!\n\n';
+    msg += '• Macro có thể chạy mã độc khi bạn mở file\n';
+    msg += '• KHÔNG BAO GIỜ bấm "Enable Macros" nếu không chắc chắn\n\n';
+    msg += 'Bạn có chắc chắn muốn mở liên kết này?';
+  } else if(dangerLevel === 'executable_warning'){
+    msg = '⚠️ CẢNH BÁO: Đây là file thực thi!\n\n';
+    msg += '• File này có thể chạy trực tiếp trên máy tính\n';
+    msg += '• Chỉ mở nếu bạn hoàn toàn tin tưởng nguồn gốc\n\n';
+    msg += 'Bạn có chắc chắn muốn mở liên kết này?';
+  } else if(dangerLevel === 'suspicious'){
+    msg = '⚠️ CẢNH BÁO: File này đáng ngờ!\n\n';
+    msg += '• Một số engine bảo mật đã cảnh báo về file này\n';
+    msg += '• Rủi ro nhiễm mã độc cao\n\n';
+    msg += 'Bạn có chắc chắn muốn mở liên kết này?';
+  } else {
+    msg = '⚠️ CẢNH BÁO: Không thể xác minh file này!\n\n';
+    msg += 'Bạn có chắc chắn muốn mở liên kết này?';
+  }
+  
+  return confirm(msg);
+}
+
+// ===== CHECK LOGIN → đổi nút Đăng nhập → Tài khoản =====
 (async function(){
   const a = document.getElementById('nav-auth'); if(!a) return;
   try{
-    const r = await fetch('/me');
-    if(r.status===200){ a.textContent='Tài khoản'; a.href='account.html'; }
-    else{
-      a.textContent='Đăng nhập';
-      a.href='login.html?next=' + encodeURIComponent(location.pathname + (location.hash||''));
+    const r = await fetch('/me', { credentials: 'include' });
+    if(r.ok){
+      const data = await r.json();
+      if(data && data.username){
+        a.textContent = 'Tài khoản';
+        a.href = 'account.html';
+      } else {
+        a.textContent = 'Đăng nhập';
+        a.href = 'login.html?next=' + encodeURIComponent(location.pathname);
+      }
+    } else {
+      a.textContent = 'Đăng nhập';
+      a.href = 'login.html?next=' + encodeURIComponent(location.pathname);
     }
-  }catch{
-    a.textContent='Đăng nhập';
-    a.href='login.html?next=' + encodeURIComponent(location.pathname + (location.hash||''));
+  }catch(e){
+    a.textContent = 'Đăng nhập';
+    a.href = 'login.html?next=' + encodeURIComponent(location.pathname);
   }
 })();
 </script>

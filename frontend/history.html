@@ -191,8 +191,11 @@ async function loadScanHistory() {
     if (data.status === 'ok' && data.history.length > 0) {
       listDiv.innerHTML = data.history.map(item => {
         const isUrl = item.qr_type === 'url';
+        const isFile = item.qr_type === 'file';
+        const isBank = item.qr_type === 'bank';
         const isSafe = item.is_safe;
-        const canClick = isUrl && isSafe && item.details.malicious === 0 && item.details.suspicious === 0;
+        const details = item.details || {};
+        const canClick = isUrl && isSafe && details.malicious === 0 && details.suspicious === 0;
         
         let contentDisplay = '';
         if (canClick) {
@@ -201,22 +204,63 @@ async function loadScanHistory() {
           contentDisplay = `<code>${escapeHtml(item.qr_content.substring(0, 80))}${item.qr_content.length > 80 ? '...' : ''}</code>`;
         }
         
+        // Tags bổ sung
+        let extraTags = '';
+        
+        if (isBank) {
+          extraTags = '<span class="tag warn">🏦 QR Thanh toán</span>';
+        } else if (isFile) {
+          const dangerLevel = details.danger_level || 'unknown';
+          const hasMacro = details.has_macro_risk;
+          const isExe = details.is_executable;
+          
+          if (dangerLevel === 'blocked') {
+            extraTags = '<span class="tag danger">🚫 Mã độc</span>';
+          } else if (hasMacro) {
+            extraTags = '<span class="tag warn">⚠️ Macro</span>';
+          } else if (isExe) {
+            extraTags = '<span class="tag warn">⚠️ File thực thi</span>';
+          } else if (dangerLevel === 'safe') {
+            extraTags = '<span class="tag safe">✅ File sạch</span>';
+          } else {
+            extraTags = '<span class="tag neutral">📄 File</span>';
+          }
+          
+          // Hiện thông tin VT cho file
+          if (details.vt_file_result) {
+            const vf = details.vt_file_result;
+            if (vf.malicious > 0) {
+              extraTags += ` <span class="tag danger">🔴 ${vf.malicious}/${vf.total || '?'}</span>`;
+            } else if (vf.total > 0) {
+              extraTags += ` <span class="tag safe">✅ ${vf.harmless}/${vf.total}</span>`;
+            }
+          }
+        } else if (isUrl) {
+          if (!isSafe && details.malicious) {
+            extraTags = `<span class="tag danger">🔴 ${details.malicious}/${details.total}</span>`;
+          }
+        }
+        
+        // Status tag
+        let statusTag = '';
+        if (isBank) {
+          statusTag = '<span class="tag warn">⚠️</span>';
+        } else if (isSafe) {
+          statusTag = '<span class="tag safe">✅</span>';
+        } else {
+          statusTag = '<span class="tag danger">⚠️</span>';
+        }
+        
         return `
-          <div class="history-item ${item.is_safe ? 'safe' : 'danger'}">
+          <div class="history-item ${isBank ? 'bank' : isSafe ? 'safe' : 'danger'}">
             <div class="history-header">
               <span class="history-type">${getTypeIcon(item.qr_type)} ${getTypeName(item.qr_type)}</span>
             </div>
             <div class="history-content">
               <p>
                 ${contentDisplay}
-                ${item.is_safe ? 
-                  '<span class="tag safe">✅</span>' : 
-                  '<span class="tag danger">⚠️</span>'
-                }
-                ${!item.is_safe && item.details.malicious ? 
-                  `<span class="tag danger">🔴 ${item.details.malicious}/${item.details.total}</span>` : 
-                  ''
-                }
+                ${statusTag}
+                ${extraTags}
                 ${canClick ? '<span class="tag neutral" style="margin-left: 4px;">🔗 Click để mở</span>' : ''}
               </p>
             </div>
@@ -368,6 +412,8 @@ document.getElementById('clear-create-btn').addEventListener('click', async () =
 function getTypeIcon(type) {
   const icons = {
     url: '🔗',
+    file: '📄',
+    bank: '🏦',
     text: '📝',
     wifi: '📶',
     phone: '📞',
@@ -380,6 +426,8 @@ function getTypeIcon(type) {
 function getTypeName(type) {
   const names = {
     url: 'URL',
+    file: 'File',
+    bank: 'Ngân hàng',
     text: 'Văn bản',
     wifi: 'WiFi',
     phone: 'Điện thoại',
