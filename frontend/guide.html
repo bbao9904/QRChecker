@@ -39,6 +39,8 @@
       <li>Nhấn nút “Chọn ảnh” để chọn file PNG/JPG.</li>
       <li>Dán trực tiếp ảnh vừa chụp (Ctrl + V) vào trang.</li>
       <li>Nhấn “Quét bằng Camera” → cho phép truy cập camera → đưa mã vào khung.</li>
+      <li><strong>Hỗ trợ nhận diện mã QR ngân hàng</li>
+      <li><strong>Cảnh báo file macro:</strong> Nếu QR chứa link tải file Word/Excel/PPT có macro (.docm, .xlsm, .pptm...), hệ thống sẽ cảnh báo nguy cơ mã độc.</li>
     </ul>
     <p style="font-size:.8rem;margin-top:10px;">Mẹo: Ảnh mờ / lóe → tăng sáng, giữ máy cố định; QR nhỏ → đưa gần hơn một chút rồi giữ yên.</p>
   </div>
@@ -75,9 +77,41 @@
     </ul>
   </div>
 
+  <!-- HƯỚNG DẪN EXTENSION -->
+  <div class="quick-section" id="extension-guide">
+    <h2><span class="badge">E</span>Hướng dẫn sử dụng Extension QR Checker</h2>
+    <ul>
+      <li>Cài đặt Extension QR Checker từ Chrome Web Store hoặc file .crx.</li>
+      <li>Sau khi cài, biểu tượng QR Checker sẽ xuất hiện ở góc trình duyệt.</li>
+      <li>Đăng nhập tài khoản để sử dụng đầy đủ tính năng kiểm tra VirusTotal.</li>
+      <li>Khi duyệt web, di chuột lên ảnh mã QR để tự động quét và hiển thị kết quả phân tích ngay trên trang.</li>
+      <li>Extension sẽ cảnh báo nếu QR chứa liên kết nguy hiểm, file macro, file thực thi hoặc mã ngân hàng.</li>
+      <li><strong>Cảnh báo file macro:</strong> Extension nhận diện và cảnh báo khi QR chứa link tải file Word/Excel/PPT có macro hoặc file thực thi (.exe, .bat...).</li>
+      <li><strong>Hỗ trợ nhận diện mã QR ngân hàng</li>
+      <li>Có thể điều chỉnh thời gian hover, bật/tắt cảnh báo file, tooltip trong popup Extension.</li>
+      <li>Nhấn vào biểu tượng Extension để xem trạng thái đăng nhập, đổi cài đặt hoặc đăng xuất.</li>
+      <li>Lịch sử quét được lưu trên tài khoản, có thể xem lại tại mục "Lịch sử".</li>
+    </ul>
+    <p style="font-size:.8rem;margin-top:10px;">
+      <strong>Lưu ý:</strong> Extension chỉ quét QR trên trang web, không thay thế chức năng quét ảnh/tập tin/mã QR bên ngoài trang web và các ứng dụng khác.
+    </p>
+  </div>
+
   <!-- 5. FAQ (GIỮ NGUYÊN / ĐÃ RÚT GỌN CHỈ TÁI SỬ DỤNG) -->
   <div class="quick-section" id="faq">
     <h2><span class="badge">FAQ</span>Câu hỏi thường gặp</h2>
+    <div class="faq-item">
+      <h4>Mã QR ngân hàng có hiện tên chủ tài khoản không?<span>+</span></h4>
+      <p>Không. QR ngân hàng chỉ chứa số tài khoản, mã ngân hàng, số tiền, nội dung chuyển khoản. Tên chủ tài khoản chỉ hiện nếu hệ thống tra cứu được qua API ngân hàng.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Extension cảnh báo file macro như thế nào?<span>+</span></h4>
+      <p>Nếu QR chứa link tải file Word/Excel/PPT có macro (.docm, .xlsm, .pptm...), extension sẽ hiện cảnh báo màu đỏ, khuyến nghị không mở hoặc không bật Macro.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Mã QR ngân hàng nào được hỗ trợ?<span>+</span></h4>
+      <p>Hầu hết các ngân hàng lớn tại Việt Nam: Vietcombank, MB Bank, BIDV, Techcombank, VPBank, KienLong Bank, UOB VN... và các ví điện tử phổ biến.</p>
+    </div>
     <div class="faq-item">
       <h4>Tại sao lần đầu “Chưa có kết quả”, lần sau lại có?<span>+</span></h4>
       <p>URL vừa submit cần thời gian phân tích. Lần sau dùng dữ liệu đã có.</p>
@@ -87,37 +121,33 @@
       <p>Có thể chạm giới hạn tần suất. Giãn cách vài giây mỗi lần.</p>
     </div>
     <div class="faq-item">
-      <h4>Tôi có thể thêm whitelist tài khoản VietQR không?<span>+</span></h4>
-      <p>Đang phát triển. Sẽ có trong mục Tài khoản.</p>
-    </div>
-    <div class="faq-item">
       <h4>Tại sao URL “Đáng ngờ” nhưng vẫn mở bình thường?<span>+</span></h4>
       <p>Engine thấy dấu hiệu rủi ro nhẹ. Không nên nhập thông tin nhạy cảm.</p>
     </div>
-      <div class="faq-item">
-    <h4>Mã QR Wi‑Fi có độc hại không?<span>+</span></h4>
-    <p>Mã Wi‑Fi chỉ chứa SSID, kiểu mã hóa và mật khẩu; không có liên kết/mã thực thi. Rủi ro là bạn kết nối vào mạng giả mạo. Ứng dụng chỉ hiển thị thông tin, không đánh giá an toàn mạng.</p>
-  </div>
-  <div class="faq-item">
-    <h4>Mã QR Text có độc hại không?<span>+</span></h4>
-    <p>Text là văn bản thuần. Nếu bên trong có URL, hãy kiểm tra URL đó. Văn bản thuần không có báo cáo VirusTotal.</p>
-  </div>
-  <div class="faq-item">
-    <h4>Mã QR Phone (tel:) có độc hại không?<span>+</span></h4>
-    <p>tel: chỉ mở ứng dụng gọi với số điền sẵn, không tự gọi. Kiểm tra số trước khi thực hiện. Không áp dụng VirusTotal.</p>
-  </div>
-  <div class="faq-item">
-    <h4>Mã QR SMS (sms:/SMSTO:) có độc hại không?<span>+</span></h4>
-    <p>sms:/SMSTO: chỉ mở ứng dụng SMS với nội dung/số soạn sẵn, không tự gửi. Xem lại trước khi gửi. Không có phân tích URL.</p>
-  </div>
-  <div class="faq-item">
-    <h4>Mã QR Email (mailto:) có độc hại không?<span>+</span></h4>
-    <p>mailto: mở ứng dụng email với nội dung soạn sẵn, không tự gửi. Kiểm tra người nhận/nội dung. Không áp dụng VirusTotal.</p>
-  </div>
-  <div class="faq-item">
-    <h4>Vì sao Wi‑Fi/Text/Phone/SMS/Email không có “kết quả phân tích”?<span>+</span></h4>
-    <p>Phân tích an toàn chỉ áp dụng cho liên kết http/https. Các loại QR khác được nhận diện và hiển thị chi tiết nhưng không gọi engine kiểm tra URL nên không có thống kê Clean/Suspicious/Malicious.</p>
-  </div>
+    <div class="faq-item">
+      <h4>Mã QR Wi‑Fi có độc hại không?<span>+</span></h4>
+      <p>Mã Wi‑Fi chỉ chứa SSID, kiểu mã hóa và mật khẩu; không có liên kết/mã thực thi. Rủi ro là bạn kết nối vào mạng giả mạo. Ứng dụng chỉ hiển thị thông tin, không đánh giá an toàn mạng.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Mã QR Text có độc hại không?<span>+</span></h4>
+      <p>Text là văn bản thuần. Nếu bên trong có URL, hãy kiểm tra URL đó. Văn bản thuần không có báo cáo VirusTotal.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Mã QR Phone (tel:) có độc hại không?<span>+</span></h4>
+      <p>tel: chỉ mở ứng dụng gọi với số điền sẵn, không tự gọi. Kiểm tra số trước khi thực hiện. Không áp dụng VirusTotal.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Mã QR SMS (sms:/SMSTO:) có độc hại không?<span>+</span></h4>
+      <p>sms:/SMSTO: chỉ mở ứng dụng SMS với nội dung/số soạn sẵn, không tự gửi. Xem lại trước khi gửi. Không có phân tích URL.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Mã QR Email (mailto:) có độc hại không?<span>+</span></h4>
+      <p>mailto: mở ứng dụng email với nội dung soạn sẵn, không tự gửi. Kiểm tra người nhận/nội dung. Không áp dụng VirusTotal.</p>
+    </div>
+    <div class="faq-item">
+      <h4>Vì sao Wi‑Fi/Text/Phone/SMS/Email không có “kết quả phân tích”?<span>+</span></h4>
+      <p>Phân tích an toàn chỉ áp dụng cho liên kết http/https. Các loại QR khác được nhận diện và hiển thị chi tiết nhưng không gọi engine kiểm tra URL nên không có thống kê Clean/Suspicious/Malicious.</p>
+    </div>
   </div>
 
   <p style="text-align:center;font-size:.7rem;color:#666;margin-top:30px;">Tài liệu ngắn gọn – sẽ cập nhật khi có tính năng mới.</p>
